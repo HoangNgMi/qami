@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>zen.agency — Phân tích TikTok Shop</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+<div class="nav">
+  <div class="brand">z<span class="o">e</span>n.ag<span class="o">e</span>ncy</div>
+  <div class="navbtns">
+    <button data-view="home" class="on">HOME</button>
+    <button data-view="clients">KHÁCH HÀNG</button>
+  </div>
+</div>
+
+<!-- ============ HOME ============ -->
+<main id="view-home" class="view on"><div class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Analytics for TikTok Shop sellers</div>
+    <h1>Clear <span class="o">profit</span> analytics for your <span style="white-space:nowrap">TikTok Shop</span></h1>
+    <p>We bring your sales, costs, commissions and ad spend into one dashboard —
+       so you can see which products and channels actually make money.</p>
+    <button class="cta" data-view="clients">View sample dashboard →</button>
+  </section>
+
+  <div class="stats">
+    <div class="stat"><div class="n"><span class="o">1</span> link</div><div class="t">One shareable dashboard</div></div>
+    <div class="stat"><div class="n">Real-time</div><div class="t">Refreshes on every data import</div></div>
+    <div class="stat"><div class="n">Full P&amp;L</div><div class="t">COGS, fees and ads all included</div></div>
+  </div>
+
+  <div class="showgrid">
+    <div class="card"><h2>Revenue growth</h2><div class="c" id="hc1"></div></div>
+    <div class="card"><h2>Cost breakdown</h2><div class="c" id="hc2"></div></div>
+  </div>
+
+  <div class="services">
+    <div class="svc"><div class="ic">📊</div><h3>Profit analysis</h3>
+      <p>Break down COGS, platform fees, commissions and ads per order, so you see the real margin.</p></div>
+    <div class="svc"><div class="ic">⚡</div><h3>Live dashboard</h3>
+      <p>One link, refreshed on every data import. Works on mobile too.</p></div>
+    <div class="svc"><div class="ic">🎯</div><h3>Optimization</h3>
+      <p>Where to push and where you're overspending. Right-sized for small sellers.</p></div>
+  </div>
+</div></main>
+
+<!-- ============ KHÁCH HÀNG (dashboard) ============ -->
+<main id="view-clients" class="view"><div class="wrap">
+  <div class="dashhead">
+    <div><h1>Gấu Bông QAMI</h1><div class="src" id="updated">nguồn nội bộ</div></div>
+    <div class="filters">
+      <div class="f"><label>Kênh</label><select id="fCh"></select></div>
+      <div class="f"><label>Trạng thái</label><select id="fSet"></select></div>
+      <div class="f range"><label>Khoảng ngày · <span id="drLabel">—</span></label>
+        <div class="rangewrap">
+          <div class="rtrack"><div class="rfill" id="rfill"></div></div>
+          <input type="range" id="drStart" min="0" value="0">
+          <input type="range" id="drEnd" min="0" value="0">
+        </div></div>
+      <div class="f"><label>So sánh cùng kỳ</label>
+        <label class="chk"><input type="checkbox" id="cmp" checked> Kỳ trước</label></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-tab="ov">Tổng quan</button>
+    <button class="tab" data-tab="prod">Sản phẩm</button>
+    <button class="tab" data-tab="ch">Kênh</button>
+  </div>
+
+  <section class="panel on" id="p-ov">
+    <div class="kpis" id="kpis"></div>
+    <div class="card" data-chart="tlOrders"><h2>Thời gian — Số đơn theo ngày <span class="note">(đường gạch = TB)</span><span id="olAvg" class="avgnote"></span></h2><div class="c" id="tlOrders"></div></div>
+    <div class="card" data-chart="tlMoney"><h2>Thời gian — Dòng tiền theo ngày <span class="note">(triệu đồng)</span><span id="tlAvg" class="avgnote"></span></h2><div class="c tall" id="tlMoney"></div></div>
+    <div class="grid2">
+      <div class="card" data-chart="ovCost"><h2>Cơ cấu chi phí</h2><div class="c" id="ovCost"></div></div>
+      <div class="card notecard">
+        <div class="notehead"><h2>📌 Ghi chú nổi bật</h2><button id="noteEdit" class="minibtn">✏️ Sửa</button></div>
+        <div id="noteBody" class="notebody"></div>
+        <div id="noteEditWrap" class="noteedit" style="display:none">
+          <textarea id="noteText" rows="7" placeholder="Để trống = tự điền thông tin quan trọng…"></textarea>
+          <div class="noterow"><button id="noteSave" class="minibtn dark">Lưu</button><button id="noteReset" class="minibtn">Về mặc định</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="panel" id="p-prod"><div class="stack">
+    <div class="card" data-chart="prodBubble"><h2>Hiệu quả sản phẩm — Doanh thu × Net ROI (bong bóng = số đơn)</h2><div class="c tall" id="prodBubble"></div></div>
+    <div class="card" data-chart="prodBar"><h2>Lời/lỗ theo sản phẩm (Top doanh thu)</h2><div class="c tall" id="prodBar"></div></div>
+  </div></section>
+  <section class="panel" id="p-ch"><div class="stack">
+    <div class="card" data-chart="chROI"><h2>ROI theo kênh</h2><div class="c" id="chROI"></div></div>
+    <div class="card" data-chart="chCost"><h2>Cơ cấu chi phí theo kênh (% doanh thu)</h2><div class="c" id="chCost"></div></div>
+  </div></section>
+  <footer>Dashboard bởi z<span class="o">e</span>n.ag<span class="o">e</span>ncy · dữ liệu nhúng tĩnh, xem được offline</footer>
+</div></main>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

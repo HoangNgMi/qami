@@ -1,0 +1,79 @@
+#!/bin/sh
+# ============================================================
+# pre-commit — KHIÊN "CHỐT CHẶN TỰ ĐỘNG TUYỆT ĐỐI" (dùng chung mọi dự án)
+# Bật:  git config core.hooksPath hooks
+# Lớp A: chặn theo TÊN file (data/secret).  Lớp B: quét NỘI DUNG dòng staged (PII/secret/đường dẫn user).
+# Fail-safe: thiếu python -> CHẶN (không để lọt). Vượt khẩn cấp: --no-verify (tự chịu trách nhiệm).
+# ============================================================
+
+# ---- Lớp A: tên file ----
+blocked=$(git diff --cached --name-only --diff-filter=ACM \
+  | grep -Ei '\.(xlsx|xlsm|csv|tsv|key|pem|pfx|zip|sqlite|sqlite3|db)$|(^|/)data\.js$|(^|/)\.env($|\.)|(^|/)(rawdata|cleaned|cost|private|_VAULT)/|secret|token|credential' \
+  | grep -vEi '\.example$')
+if [ -n "$blocked" ]; then
+  echo ""
+  echo "  ✘ COMMIT BỊ CHẶN (Lớp A) — file có thể chứa DATA THẬT / SECRET:"
+  echo "$blocked" | sed 's/^/     - /'
+  echo ""
+  echo "  → Kiểm .gitignore. Data thật để ngoài repo, secret ở _VAULT/."
+  echo ""
+  exit 1
+fi
+
+# ---- Lớp B: nội dung dòng staged ----
+command -v python >/dev/null 2>&1 || { echo "  ✘ CHẶN: thiếu 'python' để quét nội dung (fail-safe)."; exit 1; }
+
+python - <<'PYEOF'
+import subprocess, re, sys
+
+diff = subprocess.run(
+    ["git", "diff", "--cached", "--unified=0", "--no-color"],
+    capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+
+# --- mẫu nhận diện (chỉ quét dòng THÊM) ---
+PHONE   = re.compile(r"(?<!\d)(?:\+?84|0)\d{9}(?!\d)")
+PERSONAL_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@(?:gmail|outlook|yahoo|hotmail|icloud|proton(?:mail)?|realestatedoc)\.[A-Za-z.]{2,}", re.I)
+APIKEY  = re.compile(r"(sk-[A-Za-z0-9]{12,}|AIza[A-Za-z0-9_\-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[A-Z0-9]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)")
+SECRET_ASSIGN = re.compile(r"(?i)\b(api[_-]?key|secret|token|password|passwd|bearer)\b\s*[:=]\s*['\"][^'\"]{8,}['\"]")
+USERPATH = re.compile(r"[A-Za-z]:\\\\?Users\\\\?(?!(?:<|%|USERNAME|username|user>|you\b))[A-Za-z0-9._-]+", re.I)
+
+# (Không dùng allowlist theo-cả-dòng: nó tạo lỗ "secret thật + chữ 'example' => lọt".
+#  Các regex dưới đã tự loại placeholder: email chỉ bắt gmail/outlook/...; USERPATH loại <username>.)
+CHECKS = [
+    ("SĐT", PHONE), ("Email cá nhân", PERSONAL_EMAIL), ("API key/secret", APIKEY),
+    ("Gán secret", SECRET_ASSIGN), ("Đường dẫn ổ cứng có tên user", USERPATH),
+]
+
+cur = "?"
+hits = []
+for ln in diff.splitlines():
+    if ln.startswith("+++ "):
+        cur = ln[6:] if ln.startswith("+++ b/") else ln[4:]
+        continue
+    if not ln.startswith("+") or ln.startswith("+++"):
+        continue
+    line = ln[1:]
+    for label, rx in CHECKS:
+        m = rx.search(line)
+        if m:
+            snap = m.group(0)
+            if len(snap) > 40:
+                snap = snap[:20] + "…" + snap[-8:]
+            hits.append((cur, label, snap, line.strip()[:70]))
+
+if hits:
+    print("")
+    print("  ✘ COMMIT BỊ CHẶN (Lớp B) — NỘI DUNG dòng sắp commit lộ thông tin nhạy cảm:")
+    for f, label, snap, ctx in hits[:20]:
+        print(f"     [{label}] {f}")
+        print(f"        → '{snap}'   (dòng: {ctx})")
+    if len(hits) > 20:
+        print(f"     … và {len(hits)-20} dòng nữa.")
+    print("")
+    print("  → Thay bằng placeholder (vd <username>, your@email.com), đưa secret vào _VAULT/,")
+    print("    hoặc dùng biến môi trường. ĐỪNG --no-verify trừ khi CHẮC CHẮN an toàn.")
+    print("")
+    sys.exit(1)
+sys.exit(0)
+PYEOF
+exit $?
