@@ -14,6 +14,22 @@
 > _Living repo · updated 2026-11-10 · built in public._
 <!-- SHIP:END -->
 
+## 🌍 About (English)
+
+**QAMI turns raw TikTok Shop exports into true per-product / per-channel / per-day profit** — merging sales, costs, commissions and ad spend into one dashboard, so a seller knows exactly *what to push and what to cut*.
+
+**What makes it correct (not just pretty):**
+- **Returned-order netting (`Z04`)** — TikTok logs a sale (+) and its refund (−) as *separate rows*; a naive "keep latest" shows phantom negative revenue. QAMI **aggregates** to the true net.
+- **Fee reconciliation (`Z10`)** — a pure-code QA step surfaces ~1,377 VND/order of fees that fall *outside* the standard buckets and quietly eat margin.
+- **Zero-cost, zero-leak stack** — flat files + plain Python + Vercel Hobby (no DB, no heavy libs); **real data never touches git** (blocked at commit time by the OS pre-commit shield).
+
+**Architecture:** 4-Tier + `[ZONE]` — every logic block declares `In / Out / Status`. 🔒 LOCKED = reviewed & frozen · ✏️ DRAFT = in progress.
+
+📖 **Deep dive →** [Case Study: Data Rigor × Zero-Leakage](https://github.com/HoangNgMi/principles/blob/main/showcase/CASE_STUDY_01_ZERO_LEAKAGE_DATA.md)
+
+---
+
+### 🇻🇳 Chi tiết (tiếng Việt)
 
 Gom dữ liệu TikTok (đã + chưa quyết toán) → 1 bảng tập trung → dashboard web.
 Tổ chức theo **4 Tầng + ZONE**. 👉 Hiểu toàn hệ trong 1 trang: **[`BLUEPRINT.md`](BLUEPRINT.md)**.
