@@ -3,15 +3,15 @@
 <!-- SHIP:START (auto by tools/ship.py — do not edit inside this block) -->
 > **Cho nhà bán TikTok Shop (SME) thấy lợi nhuận thật từng sản phẩm/kênh/ngày — gom bán hàng + chi phí + hoa hồng + quảng cáo về 1 dashboard, để quyết định đẩy gì / cắt gì.**
 >
-> 🧩 **Architecture / Kiến trúc:** 4-Tier + `[ZONE]`  ·  **Progress / Tiến độ:** 21 🔒 LOCKED / 2 ✏️ DRAFT  ·  **Flow:** [flow.html](flow.html)
+> 🧩 **Architecture / Kiến trúc:** 4-Tier + `[ZONE]`  ·  **Progress / Tiến độ:** 21 🔒 LOCKED / 3 ✏️ DRAFT  ·  **Flow:** [flow.html](flow.html)
 > <sub>🔒 LOCKED = reviewed & frozen · ✏️ DRAFT = in progress</sub>
 
 > **Latest insights / Bài học mới nhất (§8):**
-> - Bỏ dual-axis. Tiền và số-đơn tách 2 chart riêng (chuẩn trực quan). *(W6 app.js)*
+> - Deploy = CLI thủ công + TẮT "Vercel Authentication". `data.js` gitignore → thêm `web/.vercelignore` để vẫn upload; Vercel "Deployment Protection" bật = chặn bằng SSO Vercel (trang "die") → phải tắt vì đã có Basic Auth riêng. *(web/)*
 > - Mobile đọc không cần hover: chart hiện sẵn số; màn hẹp tự thu khoảng ngày.
 > - Còn nợ (DRAFT): review ROI (Z08) · phí ngoài 4 nhóm ~1.377đ/đơn (Z10).
 
-> _Living repo · updated 2026-11-10 · built in public._
+> _Living repo · updated 2026-11-12 · built in public._
 <!-- SHIP:END -->
 
 ## 🌍 About (English)
@@ -68,13 +68,18 @@ python python/check.py     # QA: đối chiếu raw↔output + bắt bất thư�
 > **Bản đồ ZONE / sơ đồ flow:** quan sát TẬP TRUNG qua Control Center (Alex). Từ hub:
 > `python tools/zones.py ../Dev/TIKTOK/QAMI` — kit generic không nằm trong dự án (một nguồn sự thật).
 
-## Web & Deploy (riêng tư)
+## Web & Deploy (riêng tư) — THỦ CÔNG
 - `web/index.html#clients` = dashboard; mobile hiện sẵn số (không cần hover).
-- Deploy **bằng CLI** (không git — vì `data.js` số thật đã gitignore):
+- **Deploy bằng CLI** (không qua Git — `data.js` số thật đã gitignore; `web/.vercelignore` đảm bảo data.js VẪN được upload):
 ```
-cd web && npx vercel --prod
+python python/run_all.py        # cập nhật web/data.js
+cd web && npx vercel --prod     # đẩy lên (đã login hoangngmi + link sẵn)
 ```
-- **Bảo mật:** `web/middleware.js` khoá Basic Auth. Đặt `BASIC_AUTH_USER/PASS` trong Vercel Env → Redeploy. Chưa đặt = site tự khoá cứng.
+- **2 lớp khoá — chỉ cấu hình 1 LẦN:**
+  1. 🔴 **TẮT "Vercel Authentication"**: Vercel → project → **Settings → Deployment Protection → Vercel Authentication → Disable**. *(Để bật = Vercel đá mọi người về trang login Vercel → trang "die". Mình đã có khoá riêng nên tắt.)*
+  2. **Basic Auth riêng:** `web/middleware.js` đọc `BASIC_AUTH_USER/PASS` (Settings → Environment Variables → Production). Đổi mật khẩu → sửa ở đó rồi `vercel --prod` lại.
+- Mở **đúng link production** Vercel in ra; **đừng** mở URL deploy có mã hash ngẫu nhiên (loại đó bị Vercel chặn SSO).
+- Từ lần sau chỉ còn: `python python/run_all.py` → `cd web && npx vercel --prod`.
 
 ## Khung tái dùng cho dự án mới
 Khung 4 Tầng + ZONE + bộ công cụ nay nằm ở **Control Center** (OS chung), **không còn bản sao `_TEMPLATE/` trong dự án** (một nguồn sự thật, quản lý tập trung qua Alex). Tạo dự án mới — chạy từ hub:

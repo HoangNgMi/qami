@@ -28,3 +28,6 @@ env/
 Thumbs.db
 ~$*.xlsx
 requirements.lock.txt
+
+.vercel
+.env*

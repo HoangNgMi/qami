@@ -75,5 +75,6 @@ cd web && npx vercel --prod # deploy (có Basic Auth)
 - **Gộp đơn trùng = CỘNG DỒN, không "giữ latest".** TikTok ghi bán(+)/hoàn(−) thành dòng riêng → cộng dồn mới ra net đúng; giữ-latest tạo doanh thu âm ảo. *(Z04 merge.py)*
 - **Cost ≈ hàm (dòng SP × size).** Dựng engine gợi ý cost để nhập tay nhanh, không sót SKU. *(Z02 clean.py)*
 - **Bỏ dual-axis.** Tiền và số-đơn tách 2 chart riêng (chuẩn trực quan). *(W6 app.js)*
+- **Deploy = CLI thủ công + TẮT "Vercel Authentication".** `data.js` gitignore → thêm `web/.vercelignore` để vẫn upload; Vercel "Deployment Protection" bật = chặn bằng SSO Vercel (trang "die") → phải tắt vì đã có Basic Auth riêng. *(web/)*
 - **Mobile đọc không cần hover:** chart hiện sẵn số; màn hẹp tự thu khoảng ngày.
 - **Còn nợ (DRAFT):** review ROI (Z08) · phí ngoài 4 nhóm ~1.377đ/đơn (Z10).

@@ -1,0 +1,11 @@
+# Vercel dùng file NÀY thay cho .gitignore khi deploy.
+# => data.js (số thật) KHÔNG nằm đây nên VẪN được upload, dù git vẫn bỏ qua nó.
+# Chỉ loại thứ không cần/không được đẩy lên:
+node_modules
+.vercel
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+.env.example
