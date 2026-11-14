@@ -5,6 +5,8 @@ cleaned/*.xlsx
 cost/*.xlsx
 # số liệu thật nhúng cho web (deploy vẫn upload được file này) — gitignore KHÔNG nhận inline comment:
 web/data.js
+web/video_data.js
+web/*_data.js
 
 # Cho phép giữ 1 file mẫu nhỏ để người review clone về chạy được (bỏ comment khi có):
 # !rawdata/sample_*.xlsx
@@ -31,3 +33,18 @@ requirements.lock.txt
 
 .vercel
 .env*
+!*.env.example
+
+# ===== Secret / Khiên — lớp DB mới (Medallion) =====
+_VAULT/
+*secret*
+*token*
+*credential*
+*.key
+*.pem
+*.db
+*.sqlite
+*.sqlite3
+
+# Hợp đồng case (số thật) — ngoài repo public; dùng case_config.example.py làm mẫu
+db/case_config.py

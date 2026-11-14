@@ -1,0 +1,13 @@
+{
+  "model": "m2_koc",
+  "note": "Catalog RULE lăng kính KOC (gốc Creator). Nguồn silver.video. GMV = GMV affiliate (ước tính) — KHÔNG trộn sổ lợi nhuận m1.",
+  "metrics": [
+    {"name": "gmv_per_video", "label": "GMV/video", "formula": "sum(gmv) / count(video)", "source": "m2_koc.vw_koc"},
+    {"name": "ctr_pct", "label": "CTR (click SP/hiển thị)", "formula": "sum(prod_clicks)*100/sum(prod_impressions)", "source": "m2_koc.vw_koc"},
+    {"name": "cvr_pct", "label": "CVR (đơn/click)", "formula": "sum(orders)*100/sum(prod_clicks)", "source": "m2_koc.vw_koc"},
+    {"name": "completion_pct", "label": "Tỷ lệ xem hết (weighted theo view)", "formula": "sum(completion*views)/sum(views)", "source": "m2_koc.vw_koc"},
+    {"name": "diagnosis", "label": "Chẩn đoán coaching", "formula": "so sánh ctr/completion/cvr/views với TRUNG VỊ cohort (KOC>=2 video)", "source": "m2_koc.vw_coaching"},
+    {"name": "affinity_rank", "label": "KOC × SP (rank GMV)", "formula": "row_number theo sum(gmv) desc trong mỗi creator", "source": "m2_koc.vw_affinity"}
+  ],
+  "pending": "% trả bài sau sample: cần nguồn tool_koc_tracker (Pillar 5) — chưa có trong data video."
+}
