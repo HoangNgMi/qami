@@ -19,6 +19,7 @@ cd web && npx vercel --prod # deploy (đã bật Basic Auth; TẮT Vercel Auth)
 
 ## Bản đồ ZONE lõi (chi tiết ở BLUEPRINT §5)
 `merge.py`: **Z04 Gộp đơn bán+hoàn** 🔒 · **Z06 Gom phí 4 nhóm** 🔒 · **Z08 Chỉ số/ROI** ✏️ · **Z10 Đối soát phí** ✏️ (còn nợ ~1.377đ/đơn).
+`video.py` (Video/KOC RIÊNG, ngoài COGS): **V1–V3** ✏️ → `web/video_data.js`; web `app.js` **W8 Video&KOC**. Raw: `Video_Analysis_Video_List.xlsx`. Kích hoạt ở `run_all` **bước 4/4**. GMV affiliate ≠ lợi nhuận settled.
 🔒 LOCKED = cấm sửa nếu không có lệnh · ✏️ DRAFT = đang chuẩn chỉnh.
 
 ## Bảo mật "Mù Mật Khẩu" (tuyệt đối)

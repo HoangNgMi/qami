@@ -42,7 +42,8 @@ rawdata + cost ──▶ [merge] ──▶ cleaned/02_income_py.xlsx  (bảng t�
 **merge.py** (lõi nghiệp vụ): Z01 Đọc cost · Z02 Gắn COGS/SKU · Z03 Onhold→đơn · **Z04 Gộp đơn trùng (bán+hoàn)** 🔒 · Z05 Nối Đã/Chưa+COGS · Z06 Gom phí 4 nhóm 🔒 · Z07 Chọn cột+enrich · **Z08 Chỉ số/ROI** ✏️DRAFT · Z09 Loại đơn+hậu kỳ · **Z10 Đối soát phí** ✏️DRAFT
 **clean.py:** Z01 Đọc nguồn · Z02 Engine gợi ý cost · Z03 Đẩy file cost
 **analyze.py:** Z01 Đóng gói số liệu · Z02 Ghi data.js
-**app.js:** W1 Tính · W2 Lọc riêng từng chart · W3 Tổng quan · W4 SP · W5 Kênh · W6 Thời gian · W7 Ghi chú
+**video.py** (Video/KOC RIÊNG → `video_data.js`): V1 Đọc & chuẩn hoá · V2 Tổng hợp A/B/C · V3 Ghi file — ✏️DRAFT
+**app.js:** W1 Tính · W2 Lọc riêng từng chart · W3 Tổng quan · W4 SP · W5 Kênh · W6 Thời gian · W7 Ghi chú · **W8 Video&KOC** ✏️DRAFT
 > 🔒 LOCKED = đã nghiệm thu, cấm sửa nếu không có lệnh. ✏️ DRAFT = đang chuẩn chỉnh.
 
 ## 6. BỘ CÔNG CỤ TỰ CHẠY + RUNBOOK (anh/chị tự kiểm soát, không gọi AI)
@@ -76,5 +77,6 @@ cd web && npx vercel --prod # deploy (có Basic Auth)
 - **Cost ≈ hàm (dòng SP × size).** Dựng engine gợi ý cost để nhập tay nhanh, không sót SKU. *(Z02 clean.py)*
 - **Bỏ dual-axis.** Tiền và số-đơn tách 2 chart riêng (chuẩn trực quan). *(W6 app.js)*
 - **Deploy = CLI thủ công + TẮT "Vercel Authentication".** `data.js` gitignore → thêm `web/.vercelignore` để vẫn upload; Vercel "Deployment Protection" bật = chặn bằng SSO Vercel (trang "die") → phải tắt vì đã có Basic Auth riêng. *(web/)*
+- **Video/KOC = nguồn RIÊNG, ngoài pipeline COGS.** `video.py` đọc `Video_Analysis_Video_List.xlsx` → `web/video_data.js` (`window.QAMI_VIDEO`), kích hoạt ở `run_all` bước 4/4. Web gộp 3 tab dashboard → "Tổng quan" + thêm "Video và KOC". **GMV affiliate ≠ lợi nhuận settled — KHÔNG trộn 2 sổ.** *(video.py · app.js W8)*
 - **Mobile đọc không cần hover:** chart hiện sẵn số; màn hẹp tự thu khoảng ngày.
 - **Còn nợ (DRAFT):** review ROI (Z08) · phí ngoài 4 nhóm ~1.377đ/đơn (Z10).

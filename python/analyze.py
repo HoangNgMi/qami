@@ -40,6 +40,11 @@ def build_payload(df):
     plat = (-df["Cost_Platform"]).fillna(0)
     koc = (-df["Cost_KOC"]).fillna(0)
     ads = (-df["Cost_Ads"]).fillna(0)
+    # Phí sàn phụ trội (fee_other) = |Tổng phí| - (platform+koc+ads) -> đưa vào chi phí để net ĐÚNG (khớp DB)
+    if "Tổng phí" in df.columns:
+        other = ((-df["Tổng phí"]).fillna(0) - plat - koc - ads)
+    else:
+        other = pd.Series(0, index=df.index)
 
     channels = sorted(df["_ch"].unique().tolist())
     settles = sorted(df["_set"].unique().tolist())
@@ -57,6 +62,7 @@ def build_payload(df):
         "ch": [ci[v] for v in df["_ch"]], "set": [si[v] for v in df["_set"]],
         "prod": [pi[v] for v in df["_prod"]],
         "rev": ints(rev), "cogs": ints(cogs), "plat": ints(plat), "koc": ints(koc), "ads": ints(ads),
+        "other": ints(other),
     }
 
 

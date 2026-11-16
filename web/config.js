@@ -13,10 +13,10 @@ window.CFG = {
   T: {
     surface: "#fffdf8", ink: "#1a1611", ink2: "#5f584a", muted: "#938a78",
     grid: "#ece4d4", axis: "#dcd2bd",
-    cost: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"], // COGS, Platform, Ads, KOC
+    cost: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#8a8296"], // COGS, Platform, Ads, KOC, Phí phụ trội
     roi: ["#2a78d6", "#eb6834", "#1baf7a"],             // Net ROI, ROAS, Gross ROI
     good: "#0f9d58", crit: "#cf3b3b",
     rev: "#1a1611", margin: "#0f9d58", violet: "#2a78d6", orange: "#df7a2a",
   },
-  COSTL: ["COGS", "Platform", "Ads", "KOC"],
+  COSTL: ["COGS", "Platform", "Ads", "KOC", "Phí sàn phụ trội"],
 };

@@ -9,6 +9,7 @@ const COSTL = CFG.COSTL;         // nhãn 4 nhóm chi phí
 
 const DATA = window.QAMI_DATA;
 const META = window.QAMI_META || {};
+const VID = window.QAMI_VIDEO || null;     // nguồn Video/KOC (file riêng video_data.js)
 const DATES = [...new Set(DATA.date.filter(Boolean))].sort();   // ngày duy nhất, tăng dần
 let dS = Math.max(0, DATES.length - (CFG.defaultDays || 30));   // mặc định N ngày gần nhất
 let dE = Math.max(0, DATES.length - 1);
@@ -51,9 +52,9 @@ function renderHome(){
 }
 
 /* [ZONE W1 · Gom nhóm & tính (compute / computeRange / metrics)]  Status: LOCKED */
-function grp(){ return {r:0,c:0,p:0,k:0,a:0,n:0}; }
-function add(g,r,c,p,k,a){ g.r+=r;g.c+=c;g.p+=p;g.k+=k;g.a+=a;g.n++; }
-function ac(g){ return g.c+g.p+g.k+g.a; }
+function grp(){ return {r:0,c:0,p:0,k:0,a:0,o:0,n:0}; }
+function add(g,r,c,p,k,a,o){ g.r+=r;g.c+=c;g.p+=p;g.k+=k;g.a+=a;g.o+=(o||0);g.n++; }
+function ac(g){ return g.c+g.p+g.k+g.a+g.o; }
 function computeRange(s,e){
   const D=DATA, fc=el("fCh").value, fs=el("fSet").value;
   const lo=DATES[s], hi=DATES[e];
@@ -62,12 +63,12 @@ function computeRange(s,e){
     if(fc!=="all" && D.channels[D.ch[i]]!==fc) continue;
     if(fs!=="all" && D.settles[D.set[i]]!==fs) continue;
     const d=D.date[i]; if(!d || d<lo || d>hi) continue;          // chỉ trong khoảng ngày
-    const r=D.rev[i],c=D.cogs[i],p=D.plat[i],k=D.koc[i],a=D.ads[i];
-    add(tot,r,c,p,k,a);
-    const cn=D.channels[D.ch[i]]; add(bc[cn]=bc[cn]||grp(),r,c,p,k,a);
-    const pn=D.products[D.prod[i]]; add(bp[pn]=bp[pn]||grp(),r,c,p,k,a);
-    const sn=D.settles[D.set[i]]; add(bs[sn]=bs[sn]||grp(),r,c,p,k,a);
-    days.add(d); add(bd[d]=bd[d]||grp(),r,c,p,k,a);
+    const r=D.rev[i],c=D.cogs[i],p=D.plat[i],k=D.koc[i],a=D.ads[i],o=(D.other&&D.other[i])||0;
+    add(tot,r,c,p,k,a,o);
+    const cn=D.channels[D.ch[i]]; add(bc[cn]=bc[cn]||grp(),r,c,p,k,a,o);
+    const pn=D.products[D.prod[i]]; add(bp[pn]=bp[pn]||grp(),r,c,p,k,a,o);
+    const sn=D.settles[D.set[i]]; add(bs[sn]=bs[sn]||grp(),r,c,p,k,a,o);
+    days.add(d); add(bd[d]=bd[d]||grp(),r,c,p,k,a,o);
   }
   return {tot,bc,bp,bs,bd,nd:days.size};
 }
@@ -113,7 +114,7 @@ function drawDonut(){
       center:MOB()?["44%","46%"]:["50%","45%"], avoidLabelOverlap:true,
       itemStyle:{borderColor:T.surface,borderWidth:2},
       label:{color:T.ink,formatter:"{b}\n{d}%",fontSize:MOB()?10:12},
-      data:COSTL.map((n,i)=>({name:n,value:[t.c,t.p,t.k,t.a][i]}))}]
+      data:COSTL.map((n,i)=>({name:n,value:[t.c,t.p,t.k,t.a,t.o][i]}))}]
   }, true);
 }
 function rOverview(){
@@ -233,7 +234,7 @@ function drawMoney(){
   const STEP=Math.max(1,Math.ceil(dts.length/12)), everyDay=dts.length<=45;
   const avgR=rev.length?rev.reduce((s,x)=>s+x,0)/rev.length:0;
   if(el("tlAvg")) el("tlAvg").textContent=" · TB/ngày: "+fV(avgR);
-  const costS=[["c","COGS"],["p","Platform"],["k","Ads"],["a","KOC"]].map((kk,ix)=>({
+  const costS=[["c","COGS"],["p","Platform"],["k","Ads"],["a","KOC"],["o","Phí sàn phụ trội"]].map((kk,ix)=>({
     name:kk[1],type:"bar",stack:"cost",color:T.cost[ix],
     itemStyle:{borderColor:T.surface,borderWidth:.4,borderRadius:ix===3?[3,3,0,0]:0}, data:dts.map(d=>g(d)[kk[0]])}));
   const series=[...costS,
@@ -281,14 +282,140 @@ function drawOrders(){
   }, true);
 }
 
+/* [ZONE W8 · Video & KOC: năng suất + xếp hạng + phễu]  Status: DRAFT
+   Nguồn: window.QAMI_VIDEO (video_data.js, từ python/video.py). Không có nguồn -> ẩn, hiện empty. */
+function renderVideo(){
+  const V=VID, empty=el("vEmpty"), has=V && V.koc && V.koc.length;
+  if(empty) empty.style.display=has?"none":"block";
+  if(!has){ el("vkpis").innerHTML=""; return; }
+  drawVKpis(V); drawVHeat(V); drawVTable(V);
+}
+function drawVKpis(V){ const t=V.totals||{};
+  const K=[{l:"Tổng video",v:fF(t.videos)},{l:"Số KOC",v:fF(t.koc)},{l:"GMV video",v:fV(t.gmv)},
+    {l:"Hoa hồng ước tính",v:fV(t.comm)},{l:"Số món bán",v:fF(t.sold)}];
+  el("vkpis").innerHTML=K.map(k=>`<div class="kpi"><div class="l">${k.l}</div><div class="v">${k.v}</div><div class="s">${t.range||""}</div></div>`).join("");
+}
+let vExpand=false; const VTOP=20;   // bảng ma trận: hiện top 20, mở xem thêm
+function drawVHeat(V){
+  const lo=DATES[dS], hi=DATES[dE];                 // lọc cột ngày theo BỘ LỌC CHUNG ở trên
+  const cols=V.dates.filter(d=>d>=lo && d<=hi);
+  const host=el("vHeat");
+  if(!cols.length){ host.innerHTML='<div style="padding:22px;color:#938a78">Không có video trong khoảng ngày đang lọc.</div>'; return; }
+  const ci={}; cols.forEach((d,i)=>ci[d]=i);
+  const rows=V.koc.map(name=>({name,cells:new Array(cols.length).fill(0),total:0}));
+  for(const [di,ki,c] of V.heat){ const cx=ci[V.dates[di]]; if(cx===undefined) continue;
+    rows[ki].cells[cx]+=c; rows[ki].total+=c; }
+  const active=rows.filter(r=>r.total>0).sort((a,b)=>b.total-a.total);   // luôn sort DESC theo Tổng
+  const max=Math.max(1,...active.map(r=>Math.max(0,...r.cells)));
+  const shown=vExpand?active:active.slice(0,VTOP);
+  const colTot=cols.map((_,cx)=>active.reduce((s,r)=>s+r.cells[cx],0));
+  const grand=active.reduce((s,r)=>s+r.total,0);
+  const blue=v=>{ if(!v) return "";                 // gradient xanh như hình PBI
+    const t=0.10+0.90*Math.sqrt(v/max), L=[238,244,251], D=[42,120,214];
+    const c=L.map((a,i)=>Math.round(a+(D[i]-a)*t));
+    return "background:rgb("+c[0]+","+c[1]+","+c[2]+");color:"+(t>0.62?"#fff":"#243b53"); };
+  const dd=d=>{const p=d.split("-");return p[2]+"/"+p[1];};
+  const dcell=v=>'<td style="'+blue(v)+'">'+(v||"")+'</td>';
+  const others=vExpand?[]:active.slice(VTOP);          // thu gọn = GỘP phần còn lại, KHÔNG loại bỏ
+  let body=shown.map(function(r){return '<tr><td class="kcol" title="'+r.name+'">'+r.name+'</td>'+
+    r.cells.map(dcell).join("")+'<td class="tcol">'+r.total+'</td></tr>';}).join("");
+  if(others.length){
+    const oc=cols.map(function(_,cx){var s=0;others.forEach(function(r){s+=r.cells[cx];});return s;});
+    const ot=others.reduce(function(s,r){return s+r.total;},0);
+    body+='<tr class="orow"><td class="kcol">… '+others.length+' KOC còn lại (gộp)</td>'+
+      oc.map(function(v){return '<td>'+(v||"")+'</td>';}).join("")+'<td class="tcol">'+ot+'</td></tr>';
+  }
+  const h='<table class="vmx"><thead><tr><th class="kcol">KOC / Ngày</th>'+
+    cols.map(function(d){return '<th>'+dd(d)+'</th>';}).join("")+'<th class="tcol">Tổng</th></tr></thead><tbody>'+
+    body+'</tbody><tfoot><tr><td class="kcol">Tổng</td>'+
+      cols.map(function(_,cx){return '<td>'+(colTot[cx]||"")+'</td>';}).join("")+'<td class="tcol">'+grand+'</td></tr></tfoot></table>';
+  let out=h;
+  if(active.length>VTOP){ out+='<button id="vMore" class="minibtn" style="margin:8px 0 2px">'
+    +(vExpand?'▲ Thu gọn (20 đầu + gộp phần còn lại)':'▼ Hiện tất cả '+active.length+' KOC')+'</button>'; }
+  host.innerHTML=out;
+  const mb=el("vMore"); if(mb) mb.onclick=()=>{ vExpand=!vExpand; drawVHeat(V); };
+}
+function drawVKocRev(V){ const rows=[...V.kocRank].sort((a,b)=>a.gmv-b.gmv);
+  gc("vKocRev").setOption({
+    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${r.name}</b><br>GMV ${fF(r.gmv)}đ<br>${r.videos} video · ${fF(r.sold)} món<br>Hoa hồng ~${fF(r.comm)}đ`;}}),
+    grid:{left:8,right:60,top:10,bottom:22,containLabel:true},
+    xAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
+    yAxis:{type:"category",data:rows.map(r=>r.name.length>18?r.name.slice(0,18)+"…":r.name),axisLabel:{color:T.ink2,fontSize:MOB()?10:11},axisLine:{lineStyle:{color:T.axis}}},
+    series:[{type:"bar",data:rows.map(r=>({value:r.gmv,o:r,itemStyle:{color:T.violet,borderRadius:[0,5,5,0]}})),
+      label:{show:true,position:"right",color:T.ink2,fontSize:11,formatter:p=>fV(p.value)}}]
+  },true);
+}
+function drawVKocEff(V){ const rows=[...V.kocRank].sort((a,b)=>a.gpv-b.gpv);
+  gc("vKocEff").setOption({
+    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${r.name}</b><br>GMV/video ${fF(r.gpv)}đ<br>${r.videos} video`;}}),
+    grid:{left:8,right:60,top:10,bottom:22,containLabel:true},
+    xAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
+    yAxis:{type:"category",data:rows.map(r=>r.name.length>18?r.name.slice(0,18)+"…":r.name),axisLabel:{color:T.ink2,fontSize:MOB()?10:11},axisLine:{lineStyle:{color:T.axis}}},
+    series:[{type:"bar",data:rows.map(r=>({value:r.gpv,o:r,itemStyle:{color:T.orange,borderRadius:[0,5,5,0]}})),
+      label:{show:true,position:"right",color:T.ink2,fontSize:11,formatter:p=>fV(p.value)}}]
+  },true);
+}
+function drawVFunnel(V){ const pts=V.videos.filter(v=>v.ctr!=null),gmax=Math.max(1,...pts.map(v=>v.gmv));
+  gc("vFunnel").setOption({
+    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${r.user}</b><br>CTR ${r.ctr}%<br>Bán ${fF(r.sold)} món<br>GMV ${fF(r.gmv)}đ<br>Xem hết ${r.comp!=null?r.comp+'%':'—'}`;}}),
+    grid:{left:46,right:20,top:16,bottom:38,containLabel:true},
+    xAxis:{type:"value",name:"CTR (%)",nameLocation:"middle",nameGap:24,nameTextStyle:{color:T.muted},axisLabel:{color:T.muted,formatter:"{value}%",fontSize:MOB()?10:11},splitLine:sl()},
+    yAxis:{type:"value",name:"Số món bán",nameTextStyle:{color:T.muted},axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
+    series:[{type:"scatter",data:pts.map(r=>({value:[r.ctr,r.sold],o:r,
+        symbolSize:8+Math.sqrt(r.gmv/gmax)*(MOB()?22:34),
+        itemStyle:{color:T.good,opacity:.62,borderColor:T.surface,borderWidth:1}})),
+      labelLayout:{hideOverlap:true}}]
+  },true);
+}
+
+/* [ZONE W9 · Bảng Video ROI (xếp hạng GMV↓ rồi Doanh thu gộp↓)]  Status: DRAFT */
+let vtExpand=false;
+function drawVTable(V){
+  const host=el("vTable"); const rows=(V && V.table)||[];
+  if(!host) return;
+  if(!rows.length){ host.innerHTML='<div style="padding:22px;color:#938a78">Chưa có dữ liệu video.</div>'; return; }
+  const shown=vtExpand?rows:rows.slice(0,VTOP);
+  const dd=function(d){var p=(d||'').split('-');return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):d;};
+  const pc=function(x){return x==null?'—':x+'%';};
+  const esc=function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+  var body=shown.map(function(r){
+    return '<tr><td>'+dd(r.date)+'</td>'+
+      '<td class="kcol" title="'+esc(r.user)+'">'+esc(r.user)+'</td>'+
+      '<td class="lnk"><a href="'+esc(r.link)+'" target="_blank" rel="noopener" title="'+esc(r.link)+'">'+esc(r.link)+'</a></td>'+
+      '<td class="num">'+fF(r.gmv)+'</td>'+
+      '<td class="num">'+fF(r.views)+'</td>'+
+      '<td class="num">'+pc(r.ctr)+'</td>'+
+      '<td class="num">'+pc(r.ctor)+'</td>'+
+      '<td class="num">'+fF(r.orders)+'</td>'+
+      '<td class="num">'+fF(r.refund)+'</td>'+
+      '<td class="num">'+fF(r.sold)+'</td>'+
+      '<td class="num">'+pc(r.comp)+'</td></tr>';
+  }).join("");
+  var h='<table class="vtbl"><thead><tr>'+
+    '<th>Thời gian đăng</th><th class="kcol">Tên người dùng</th><th>Link video</th>'+
+    '<th class="num">GMV video liên kết</th>'+
+    '<th class="num" title="Lượt xem video">Lượt xem</th>'+
+    '<th class="num" title="CTR = Lượt nhấp SP ÷ Lượt xem video">CTR</th>'+
+    '<th class="num" title="CTOR = Số đơn ÷ Lượt nhấp SP × 100%">CTOR</th>'+
+    '<th class="num" title="Đơn hàng nhờ video">Số đơn</th>'+
+    '<th class="num" title="Số món đã hoàn tiền">Hoàn (món)</th>'+
+    '<th class="num" title="Số món bán ra ghi nhận vào video — khác số đơn">Số món bán</th>'+
+    '<th class="num" title="Tỷ lệ xem hết">Tỷ lệ xem hết</th></tr></thead><tbody>'+
+    body+'</tbody></table>';
+  var out=h;
+  if(rows.length>VTOP){ out+='<button id="vtMore" class="minibtn" style="margin:8px 0 2px">'
+    +(vtExpand?'▲ Thu gọn':'▼ Hiện tất cả '+rows.length+' video')+'</button>'; }
+  host.innerHTML=out;
+  var b=el("vtMore"); if(b) b.onclick=function(){ vtExpand=!vtExpand; drawVTable(V); };
+}
+
 /* ---------- điều phối ---------- */
 const RENDER={ ovCost:drawDonut, tlOrders:drawOrders, tlMoney:drawMoney,
   prodBubble:drawBubble, prodBar:drawProdBar, chROI:drawChROI, chCost:drawChCost };
 let active="ov";
 function renderActive(){
-  if(active==="ov") rOverview();
-  else if(active==="prod"){ drawBubble(); drawProdBar(); }
-  else if(active==="ch"){ drawChROI(); drawChCost(); }
+  if(active==="vid"){ renderVideo(); }
+  else { rOverview(); drawBubble(); drawProdBar(); drawChROI(); drawChCost(); }  // "Tổng quan" gộp
   setTimeout(()=>Object.values(charts).forEach(c=>c.resize()),30);
 }
 function mountControls(){

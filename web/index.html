@@ -6,6 +6,26 @@
 <title>zen.agency — Phân tích TikTok Shop</title>
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+.vmatrix{overflow:auto;max-height:560px;border:1px solid #e7dec9;border-radius:10px;margin-top:6px}
+table.vmx{border-collapse:separate;border-spacing:0;font-size:11px;white-space:nowrap}
+table.vmx th,table.vmx td{padding:3px 6px;text-align:center;border-bottom:1px solid #f0ead9;border-right:1px solid #f4efe3;min-width:30px}
+table.vmx th{position:sticky;top:0;background:#fbf7ee;color:#5f584a;font-weight:600;z-index:2}
+table.vmx .kcol{position:sticky;left:0;background:#fffdf8;text-align:left;font-weight:600;color:#1a1611;min-width:118px;max-width:150px;overflow:hidden;text-overflow:ellipsis;z-index:1}
+table.vmx th.kcol{z-index:3}
+table.vmx .tcol{font-weight:700;background:#f6f1e6;color:#1a1611;position:sticky;right:0}
+table.vmx tfoot td{position:sticky;bottom:0;background:#f1ead9;font-weight:700}
+table.vmx tr.orow td{background:#f6f2e8;color:#8a8578;font-style:italic}
+table.vmx tr.orow .kcol{color:#8a8578}
+.vtable{overflow:auto;max-height:640px;border:1px solid #e7dec9;border-radius:10px;margin-top:6px}
+table.vtbl{border-collapse:separate;border-spacing:0;font-size:11px}
+table.vtbl th,table.vtbl td{padding:4px 7px;border-bottom:1px solid #f0ead9;white-space:nowrap;text-align:left}
+table.vtbl th{position:sticky;top:0;background:#fbf7ee;color:#5f584a;font-weight:600;z-index:1;white-space:normal;vertical-align:bottom;max-width:92px;line-height:1.18}
+table.vtbl td.num,table.vtbl th.num{text-align:right}
+table.vtbl td.lnk{max-width:170px;white-space:normal;word-break:break-all;font-size:10px;line-height:1.25}
+table.vtbl td.lnk a{color:#2a78d6;text-decoration:none}
+table.vtbl tbody tr:hover{background:#fbf7ee}
+</style>
 </head>
 <body>
 <div class="nav">
@@ -66,8 +86,7 @@
   </div>
   <div class="tabs">
     <button class="tab on" data-tab="ov">Tổng quan</button>
-    <button class="tab" data-tab="prod">Sản phẩm</button>
-    <button class="tab" data-tab="ch">Kênh</button>
+    <button class="tab" data-tab="vid">Video và KOC</button>
   </div>
 
   <section class="panel on" id="p-ov">
@@ -85,20 +104,28 @@
         </div>
       </div>
     </div>
-  </section>
-  <section class="panel" id="p-prod"><div class="stack">
+    <div style="font-weight:700;color:#5f584a;margin:26px 2px 4px;font-size:15px">🧸 Sản phẩm</div>
     <div class="card" data-chart="prodBubble"><h2>Hiệu quả sản phẩm — Doanh thu × Net ROI (bong bóng = số đơn)</h2><div class="c tall" id="prodBubble"></div></div>
     <div class="card" data-chart="prodBar"><h2>Lời/lỗ theo sản phẩm (Top doanh thu)</h2><div class="c tall" id="prodBar"></div></div>
-  </div></section>
-  <section class="panel" id="p-ch"><div class="stack">
-    <div class="card" data-chart="chROI"><h2>ROI theo kênh</h2><div class="c" id="chROI"></div></div>
-    <div class="card" data-chart="chCost"><h2>Cơ cấu chi phí theo kênh (% doanh thu)</h2><div class="c" id="chCost"></div></div>
-  </div></section>
+    <div style="font-weight:700;color:#5f584a;margin:26px 2px 4px;font-size:15px">📡 Kênh</div>
+    <div class="grid2">
+      <div class="card" data-chart="chROI"><h2>ROI theo kênh</h2><div class="c" id="chROI"></div></div>
+      <div class="card" data-chart="chCost"><h2>Cơ cấu chi phí theo kênh (% doanh thu)</h2><div class="c" id="chCost"></div></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-vid">
+    <div class="kpis" id="vkpis"></div>
+    <div class="card"><h2>KOC đăng video theo ngày <span class="note">(đếm video · xanh đậm = nhiều · top 20, cột ngày lọc theo khoảng ngày trên)</span></h2><div class="vmatrix" id="vHeat"></div></div>
+    <div class="card"><h2>Video ROI <span class="note">(xếp hạng GMV ↓ · top 20, bấm "Hiện tất cả" để xem hết · di chuột lên tên cột xem công thức)</span></h2><div class="vtable" id="vTable"></div></div>
+    <div id="vEmpty" class="card" style="display:none;text-align:center;color:#938a78;padding:40px">Chưa có dữ liệu video — cấu hình nguồn <code>VIDEO_*</code> trong <code>python/config.py</code> rồi chạy <code>python python/run_all.py</code>.</div>
+  </section>
   <footer>Dashboard bởi z<span class="o">e</span>n.ag<span class="o">e</span>ncy · dữ liệu nhúng tĩnh, xem được offline</footer>
 </div></main>
 
 <script src="config.js"></script>
 <script src="data.js"></script>
+<script src="video_data.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

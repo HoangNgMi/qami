@@ -16,26 +16,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clean          # noqa: E402
 import merge          # noqa: E402
 import analyze        # noqa: E402
+import video          # noqa: E402  (nguồn Video/KOC riêng — tuỳ chọn, bỏ qua nếu thiếu file)
 
 
 def main():
-    print("1/3  Làm sạch nguồn...")
+    print("1/4  Làm sạch nguồn...")
     income = clean.read_income()
     orders = clean.read_orders()
     onhold = clean.read_onhold()
     cost = merge.read_cost()
 
-    print("2/3  Ráp nối + đối soát...")
+    print("2/4  Ráp nối + đối soát...")
     df = merge.build_central_table(income, onhold, orders, cost)
     merge.reconcile_fees(df)
     clean.CLEANED.parent.mkdir(parents=True, exist_ok=True)
     df.to_excel(clean.CLEANED, index=False)
     print(f"     cleaned -> {clean.CLEANED}  ({len(df)} đơn, {df.shape[1]} cột)")
 
-    print("3/3  Cập nhật dữ liệu web...")
+    print("3/4  Cập nhật dữ liệu web (COGS)...")
     analyze.build_report()
-    print(f"     data    -> {clean.DATA_JS}")
-    print(f"     mở web  -> {clean.REPORT}")
+    print(f"     data      -> {clean.DATA_JS}")
+
+    print("4/4  Video/KOC (nguồn riêng, bỏ qua nếu thiếu file)...")
+    print(f"     videodata -> {video.build_report()}")
+
+    print(f"     mở web    -> {clean.REPORT}")
     print("DONE.")
 
 

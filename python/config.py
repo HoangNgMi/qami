@@ -26,6 +26,35 @@ FILES = {
 }
 SHEETS = {"income": "Chi tiết đơn hàng", "orders": "OrderSKUList", "cost_list": "cost_list"}
 
+# ---------- Nguồn VIDEO/KOC (tab web "Video và KOC") — NGOÀI pipeline COGS ----------
+# Tuỳ chọn: thiếu file/cột thì pipeline VẪN chạy (chỉ bỏ qua tab video).
+VIDEO_FILE = "Video_Analysis_Video_List.xlsx"
+VIDEO_SHEET = "Sheet 1"
+VIDEO_COLS = {            # trái = tên code dùng · phải = tên cột THẬT trong file
+    "user":   "Tên nhà sáng tạo",            # KOC / nhà sáng tạo
+    "date":   "Ngày đăng",
+    "video":  "ID video",
+    "link":   "Link video",
+    "gmv":    "GMV đến từ video liên kết",   # GMV affiliate quy cho video
+    "comm":   "Hoa hồng ước tính",
+    "sold":   "Số món bán ra ghi nhận vào video",
+    "orders": "Đơn hàng nhờ video",
+    "ctr":    "CTR",
+    "comp":   "Tỷ lệ xem hết",
+    "views":  "Lượt xem video",
+    "clicks": "Lượt nhấp vào sản phẩm trong video",   # mẫu số CTOR = số đơn / số click
+    "refund": "Số món đã hoàn tiền",                   # số MÓN hoàn tiền (file ko có số ĐƠN hoàn)
+}
+VIDEO_TOP_KOC = 15        # số KOC ở bảng xếp hạng
+VIDEO_HEAT_KOC = 28       # (không dùng nữa — web tự top 20)
+VIDEO_SCATTER = 200       # (cũ)
+
+# ---------- Nguồn Creatives: lấy "Doanh thu gộp" CẤP VIDEO (join bằng ID video) ----------
+# Video_Analysis KHÔNG có "Doanh thu gộp" → lấy từ đây. Thiếu file/cột → cột đó = 0.
+CREATIVE_FILE = "Creatives video data.xlsx"
+CREATIVE_SHEET = "Sheet1"
+CREATIVE_COLS = {"video": "ID video", "rev": "Doanh thu gộp"}
+
 # ---------- Phân nhóm chi phí 4 loại (THÊM/BỚT cột phí khi TikTok đổi tên) ----------
 COST_GROUPS = {
     "platform": [
