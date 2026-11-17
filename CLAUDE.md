@@ -33,6 +33,7 @@
 **LỆNH CHỦ gõ ở phiên này**
 `/bàn` *(mặc định — chỉ bàn, không đụng file)* · `/làm` · `/phương án <vấn đề>` · `check hệ thống` *(tự soi luật nhà + chạy `evals/` + SỬA vi phạm trong lãnh thổ)* · `show hệ thống` *(xuất X-quang khung xương, 0 data, trình hub)*
 
+**Định vị:** khi cần biết mình đứng tầng nào, việc nào thuộc ai, đào sâu file nào → `../../../Principles/ORG_MAP.md` (sơ đồ Người + Agent; đọc đúng mục, không nạp cả file).
 **Chi tiết:** `../../../Principles/PRINCIPLES.md` · `../../../Principles/fde-blueprint-template/AGENT_PROTOCOL.md` · `PRODUCT_LENS.md` · `TRACEABLE_NUMBERS.md`
 **Soi từ hub:** `python ../../../Principles/scripts/fde_audit.py` · `python ../../../Principles/tools/zones.py <path>`
 <!-- BRAIN:END -->
