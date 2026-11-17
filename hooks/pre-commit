@@ -35,7 +35,9 @@ PHONE   = re.compile(r"(?<!\d)(?:\+?84|0)\d{9}(?!\d)")
 PERSONAL_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@(?:gmail|outlook|yahoo|hotmail|icloud|proton(?:mail)?|realestatedoc)\.[A-Za-z.]{2,}", re.I)
 APIKEY  = re.compile(r"(sk-[A-Za-z0-9]{12,}|AIza[A-Za-z0-9_\-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[A-Z0-9]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)")
 SECRET_ASSIGN = re.compile(r"(?i)\b(api[_-]?key|secret|token|password|passwd|bearer)\b\s*[:=]\s*['\"][^'\"]{8,}['\"]")
-USERPATH = re.compile(r"[A-Za-z]:\\\\?Users\\\\?(?!(?:<|%|USERNAME|username|user>|you\b))[A-Za-z0-9._-]+", re.I)
+# Bắt CẢ hai kiểu gạch: ổ:\Users\<username> (nguồn Windows) VÀ ổ:/Users/<username> (python/shell/JS).
+# Bản cũ chỉ bắt dấu gạch-ngược → chính hooks/post-commit của Chủ lọt qua khiên (kiểm 2026-11-17).
+USERPATH = re.compile(r"[A-Za-z]:[\\/]{1,2}Users[\\/]{1,2}(?!(?:<|%|USERNAME|username|user>|you\b))[A-Za-z0-9._-]+", re.I)
 
 # (Không dùng allowlist theo-cả-dòng: nó tạo lỗ "secret thật + chữ 'example' => lọt".
 #  Các regex dưới đã tự loại placeholder: email chỉ bắt gmail/outlook/...; USERPATH loại <username>.)
