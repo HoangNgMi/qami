@@ -51,6 +51,24 @@ function renderHome(){
   });
 }
 
+/* [ZONE W0 · Khử độc đầu vào — Untrusted Boundary]  Status: LOCKED
+   In : chuỗi do NGƯỜI NGOÀI đặt (tên KOC, tên kênh, link video — lấy từ sàn)
+   Out: chuỗi an toàn để ghép vào innerHTML / thuộc tính HTML
+   Vì sao: tên KOC do chính creator tự đặt. Ghép thẳng vào innerHTML hoặc vào
+   title="..." là chạy được script trong trình duyệt người xem.
+   Luật gốc: PRINCIPLES.md §Bảo mật · fde-blueprint-template/AGENT_PROTOCOL.md §A1 */
+const esc = function (s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
+/* esc() KHÔNG đủ cho href: "javascript:alert(1)" không chứa dấu nháy nên lọt nguyên.
+   Link phải lọc theo scheme. */
+const safeUrl = function (u) {
+  const s = String(u == null ? '' : u).trim();
+  return /^https?:\/\//i.test(s) ? esc(s) : '';
+};
+
 /* [ZONE W1 · Gom nhóm & tính (compute / computeRange / metrics)]  Status: LOCKED */
 function grp(){ return {r:0,c:0,p:0,k:0,a:0,o:0,n:0}; }
 function add(g,r,c,p,k,a,o){ g.r+=r;g.c+=c;g.p+=p;g.k+=k;g.a+=a;g.o+=(o||0);g.n++; }
@@ -159,7 +177,7 @@ function drawBubble(){
   const rois=top.map(r=>r.roi), rmin=Math.min(1,...rois), rmax=Math.max(...rois);  // giãn trục: bỏ vùng trống dưới min
   gc("prodBubble").setOption({
     tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;
-      return `<b>${r.name}</b><br>Doanh thu ${fF(r.rev)}đ<br>Net ROI ${r.roi.toFixed(2)}x<br>Số đơn ${r.orders}`;}}),
+      return `<b>${esc(r.name)}</b><br>Doanh thu ${fF(r.rev)}đ<br>Net ROI ${r.roi.toFixed(2)}x<br>Số đơn ${r.orders}`;}}),
     grid:{left:48,right:26,top:16,bottom:28,containLabel:true},
     xAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
     yAxis:{type:"value",min:+(rmin-0.05).toFixed(2),max:+(rmax+0.05).toFixed(2),
@@ -317,7 +335,7 @@ function drawVHeat(V){
   const dd=d=>{const p=d.split("-");return p[2]+"/"+p[1];};
   const dcell=v=>'<td style="'+blue(v)+'">'+(v||"")+'</td>';
   const others=vExpand?[]:active.slice(VTOP);          // thu gọn = GỘP phần còn lại, KHÔNG loại bỏ
-  let body=shown.map(function(r){return '<tr><td class="kcol" title="'+r.name+'">'+r.name+'</td>'+
+  let body=shown.map(function(r){return '<tr><td class="kcol" title="'+esc(r.name)+'">'+esc(r.name)+'</td>'+
     r.cells.map(dcell).join("")+'<td class="tcol">'+r.total+'</td></tr>';}).join("");
   if(others.length){
     const oc=cols.map(function(_,cx){var s=0;others.forEach(function(r){s+=r.cells[cx];});return s;});
@@ -337,7 +355,7 @@ function drawVHeat(V){
 }
 function drawVKocRev(V){ const rows=[...V.kocRank].sort((a,b)=>a.gmv-b.gmv);
   gc("vKocRev").setOption({
-    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${r.name}</b><br>GMV ${fF(r.gmv)}đ<br>${r.videos} video · ${fF(r.sold)} món<br>Hoa hồng ~${fF(r.comm)}đ`;}}),
+    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${esc(r.name)}</b><br>GMV ${fF(r.gmv)}đ<br>${r.videos} video · ${fF(r.sold)} món<br>Hoa hồng ~${fF(r.comm)}đ`;}}),
     grid:{left:8,right:60,top:10,bottom:22,containLabel:true},
     xAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
     yAxis:{type:"category",data:rows.map(r=>r.name.length>18?r.name.slice(0,18)+"…":r.name),axisLabel:{color:T.ink2,fontSize:MOB()?10:11},axisLine:{lineStyle:{color:T.axis}}},
@@ -347,7 +365,7 @@ function drawVKocRev(V){ const rows=[...V.kocRank].sort((a,b)=>a.gmv-b.gmv);
 }
 function drawVKocEff(V){ const rows=[...V.kocRank].sort((a,b)=>a.gpv-b.gpv);
   gc("vKocEff").setOption({
-    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${r.name}</b><br>GMV/video ${fF(r.gpv)}đ<br>${r.videos} video`;}}),
+    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${esc(r.name)}</b><br>GMV/video ${fF(r.gpv)}đ<br>${r.videos} video`;}}),
     grid:{left:8,right:60,top:10,bottom:22,containLabel:true},
     xAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
     yAxis:{type:"category",data:rows.map(r=>r.name.length>18?r.name.slice(0,18)+"…":r.name),axisLabel:{color:T.ink2,fontSize:MOB()?10:11},axisLine:{lineStyle:{color:T.axis}}},
@@ -357,7 +375,7 @@ function drawVKocEff(V){ const rows=[...V.kocRank].sort((a,b)=>a.gpv-b.gpv);
 }
 function drawVFunnel(V){ const pts=V.videos.filter(v=>v.ctr!=null),gmax=Math.max(1,...pts.map(v=>v.gmv));
   gc("vFunnel").setOption({
-    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${r.user}</b><br>CTR ${r.ctr}%<br>Bán ${fF(r.sold)} món<br>GMV ${fF(r.gmv)}đ<br>Xem hết ${r.comp!=null?r.comp+'%':'—'}`;}}),
+    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${esc(r.user)}</b><br>CTR ${r.ctr}%<br>Bán ${fF(r.sold)} món<br>GMV ${fF(r.gmv)}đ<br>Xem hết ${r.comp!=null?r.comp+'%':'—'}`;}}),
     grid:{left:46,right:20,top:16,bottom:38,containLabel:true},
     xAxis:{type:"value",name:"CTR (%)",nameLocation:"middle",nameGap:24,nameTextStyle:{color:T.muted},axisLabel:{color:T.muted,formatter:"{value}%",fontSize:MOB()?10:11},splitLine:sl()},
     yAxis:{type:"value",name:"Số món bán",nameTextStyle:{color:T.muted},axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
@@ -377,11 +395,11 @@ function drawVTable(V){
   const shown=vtExpand?rows:rows.slice(0,VTOP);
   const dd=function(d){var p=(d||'').split('-');return p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):d;};
   const pc=function(x){return x==null?'—':x+'%';};
-  const esc=function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+  /* esc()/safeUrl() dùng chung ở [ZONE W0] — một cửa khử độc duy nhất cho cả file */
   var body=shown.map(function(r){
     return '<tr><td>'+dd(r.date)+'</td>'+
       '<td class="kcol" title="'+esc(r.user)+'">'+esc(r.user)+'</td>'+
-      '<td class="lnk"><a href="'+esc(r.link)+'" target="_blank" rel="noopener" title="'+esc(r.link)+'">'+esc(r.link)+'</a></td>'+
+      '<td class="lnk"><a href="'+safeUrl(r.link)+'" target="_blank" rel="noopener" title="'+esc(r.link)+'">'+esc(r.link)+'</a></td>'+
       '<td class="num">'+fF(r.gmv)+'</td>'+
       '<td class="num">'+fF(r.views)+'</td>'+
       '<td class="num">'+pc(r.ctr)+'</td>'+
@@ -460,7 +478,7 @@ function switchView(v){
 
 /* ---------- init ---------- */
 function fill(sel,opts){ sel.innerHTML='<option value="all">Tất cả</option>'+
-  opts.map(o=>`<option value="${o}">${o}</option>`).join(""); }
+  opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join(""); }
 if(META.date) el("updated").textContent = "Cập nhật "+META.date+" · nguồn nội bộ";
 fill(el("fCh"),DATA.channels); fill(el("fSet"),DATA.settles);
 el("fCh").onchange=renderActive; el("fSet").onchange=renderActive;
