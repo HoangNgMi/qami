@@ -11,8 +11,24 @@ const DATA = window.QAMI_DATA;
 const META = window.QAMI_META || {};
 const VID = window.QAMI_VIDEO || null;     // nguồn Video/KOC (file riêng video_data.js)
 const DATES = [...new Set(DATA.date.filter(Boolean))].sort();   // ngày duy nhất, tăng dần
-let dS = Math.max(0, DATES.length - (CFG.defaultDays || 30));   // mặc định N ngày gần nhất
-let dE = Math.max(0, DATES.length - 1);
+// mặc định: tuần THỨ 2 → CHỦ NHẬT của ngày mới nhất trong data (dễ xem). Lệch định dạng ngày → lùi 7 ngày.
+function _wkDefault(){
+  if(!DATES.length) return [0,0];
+  var last=new Date(DATES[DATES.length-1]);
+  if(isNaN(last.getTime())) return [Math.max(0,DATES.length-7), DATES.length-1];
+  var dow=(last.getDay()+6)%7;                       // 0=T2 … 6=CN
+  var mon=new Date(last); mon.setDate(last.getDate()-dow);
+  var sun=new Date(mon);  sun.setDate(mon.getDate()+6);
+  var pad=function(x){return (x<10?"0":"")+x;}, iso=function(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());};
+  var mo=iso(mon), su=iso(sun), s=0, e=DATES.length-1;
+  while(s<e && DATES[s]<mo) s++;
+  while(e>0 && DATES[e]>su) e--;
+  if(s>e){ s=Math.max(0,DATES.length-7); e=DATES.length-1; }
+  return [s,e];
+}
+var _wk=_wkDefault();
+let dS = _wk[0];   // THỨ 2 của tuần mới nhất
+let dE = _wk[1];   // CHỦ NHẬT (hoặc ngày cuối có data)
 let cmpOn = CFG.compareDefault !== false;                       // so sánh kỳ trước (mặc định ON)
 
 const el = id => document.getElementById(id);
