@@ -1,0 +1,50 @@
+# ===== Dữ liệu thật của khách — KHÔNG commit lên repo (kể cả private) =====
+# Khi showcase: thay bằng mẫu ẩn danh. Tách "bản chạy cho khách" vs "bản để khoe".
+rawdata/*.xlsx
+cleaned/*.xlsx
+cost/*.xlsx
+# số liệu thật nhúng cho web (deploy vẫn upload được file này) — gitignore KHÔNG nhận inline comment:
+web/data.js
+web/video_data.js
+web/*_data.js
+
+# Cho phép giữ 1 file mẫu nhỏ để người review clone về chạy được (bỏ comment khi có):
+# !rawdata/sample_*.xlsx
+
+# ===== Nháp / ngoài khung =====
+_scratch/
+
+# ===== Node (Vercel middleware) =====
+node_modules/
+
+# ===== Python =====
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
+# ===== OS / editor =====
+.DS_Store
+Thumbs.db
+~$*.xlsx
+requirements.lock.txt
+
+.vercel
+.env*
+!*.env.example
+
+# ===== Secret / Khiên — lớp DB mới (Medallion) =====
+_VAULT/
+*secret*
+*token*
+*credential*
+*.key
+*.pem
+*.db
+*.sqlite
+*.sqlite3
+
+# Hợp đồng case (số thật) — ngoài repo public; dùng case_config.example.py làm mẫu
+db/case_config.py

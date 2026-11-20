@@ -1,0 +1,26 @@
+[
+  {
+    "id": "Z04-01",
+    "desc": "Bán rồi hoàn cùng Order ID → net = 0 (KHÔNG phải -100)",
+    "input": {"rows": [["A", 100], ["A", -100]]},
+    "expected": {"A": 0},
+    "edge_case": false,
+    "note": "Chống doanh thu ÂM ẢO. 'Giữ latest' sẽ ra -100 (sai); cộng dồn ra net đúng = 0."
+  },
+  {
+    "id": "Z04-02",
+    "desc": "Nhiều đơn độc lập — cộng dồn đúng theo từng order",
+    "input": {"rows": [["A", 100], ["B", 50], ["B", 20]]},
+    "expected": {"A": 100, "B": 70},
+    "edge_case": false,
+    "note": "Không lẫn đơn; B có 2 dòng → 70."
+  },
+  {
+    "id": "Z04-03",
+    "desc": "Edge: hoàn MỘT PHẦN → net còn lại đúng",
+    "input": {"rows": [["C", 200], ["C", -50]]},
+    "expected": {"C": 150},
+    "edge_case": true,
+    "note": "Hoàn một phần vẫn giữ net đúng = 150."
+  }
+]

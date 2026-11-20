@@ -1,0 +1,7 @@
+# Thư viện cần cho pipeline.
+# Cài 1 lần, trong terminal VS Code (dùng đúng Python mà nút Run đang chọn):
+#     python -m pip install -r requirements.txt
+pandas
+numpy
+openpyxl
+matplotlib

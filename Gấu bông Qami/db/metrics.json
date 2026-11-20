@@ -1,0 +1,12 @@
+{
+  "model": "m1_profit",
+  "note": "Catalog RULE (Traceable Numbers). Chi phí nguồn lưu ÂM → |.|. 5 nhóm phí: COGS·platform·koc·ads·other.",
+  "metrics": [
+    {"name": "net_profit", "label": "Lợi nhuận ròng/đơn", "formula": "revenue_gross - total_cost", "source": "m1_profit.vw_order", "status": "LOCKED"},
+    {"name": "margin_pct", "label": "Biên lợi nhuận %", "formula": "net_profit * 100 / revenue_gross", "source": "m1_profit.vw_order"},
+    {"name": "total_cost", "label": "Tổng chi phí/đơn", "formula": "COGS + platform + koc + ads + other", "source": "m1_profit.vw_cost_mix"},
+    {"name": "fee_other", "label": "Phí khác (chưa phân loại)", "formula": "|total_fee| - (|platform|+|koc|+|ads|)", "source": "m1_profit.vw_order", "status": "nhóm riêng — nghiên cứu phân loại sau"},
+    {"name": "net_profit_total", "label": "Lợi nhuận ròng kỳ", "formula": "sum(net_profit) WHERE is_settled", "source": "m1_profit.vw_kpi"}
+  ],
+  "billing": "flow 1/2/3. Cấu hình điền số thật ở db/case_config.py (gitignore — ngoài repo public). Mẫu: db/case_config.example.py."
+}
