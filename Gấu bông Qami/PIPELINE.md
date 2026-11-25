@@ -33,7 +33,7 @@ rawdata/*.xlsx ──clean──► cost/cost_list.xlsx ──[Chủ nhập cost
 |---|---|---|
 | `rawdata/Tất cả đơn hàng.xlsx` (sheet `OrderSKUList`) | đủ **56 cột**, có `SKU ID · Seller SKU · Product Name · Variation · Quantity` | gven xuất thiếu → chỉ 1 cột "Order ID" ⇒ clean chết |
 | `cost/cost_list.xlsx` cột `Cost Original` | **SỐ ÂM** (chi phí = khấu trừ; qami 100% âm) | điền dương → COGS lật dấu → lãi > doanh thu |
-| `rawdata/income.xlsx` (sheet `Chi tiết đơn hàng`) | phí lưu **ÂM** (quy ước TikTok) | — |
+| `rawdata/income*.xlsx` (sheet `Chi tiết đơn hàng`) — `income_YYYYMM` (bulk) + `income` (nối đuôi), **đọc TẤT CẢ** | phí lưu **ÂM** (quy ước TikTok) · các file được phép CHỒNG nhau (tự bỏ dòng trùng theo cột chung) | trước 2026-11-25 chỉ đọc `income.xlsx` → bỏ sót đơn QT riêng ở `income_202609` (T8–T9) · TikTok đổi tên cột phụ giữa các lần xuất ("SFR service fee"↔"Phí dịch vụ SFR") → `clean.INCOME_RENAME` · cột ID lưu lẫn chữ/số → đọc mọi cột "ID…" dạng chuỗi |
 | orders ↔ income | **cùng kỳ** để khớp đơn ↔ doanh thu | đơn giao mà doanh thu=0 ⇒ nghi thiếu kỳ income |
 
 ## Chạy (chuỗi cố định)
@@ -47,6 +47,7 @@ python python/run_all.py    # 3 · clean→merge→analyze→video → web/data.
 ## Version (xem tag `pipeline-v*`)
 | Version | Ngày | Nội dung |
 |---|---|---|
+| (chưa tag) | 2026-11-25 | `clean.read_income` đọc mọi `income*.xlsx` + bỏ trùng (Chủ duyệt "tự giải quyết"): +421 đơn T8–T9 · lãi ròng toàn kỳ 198,4→201,1tr · T10–T11 không đổi. Test: scratch `test_income.py` 4/4. |
 | `pipeline-v1` | 2026-11-16 | Flow nghiệm thu: clean→merge→analyze→video. Bảng Video ROI thêm cột View/CTOR/Số đơn/Hoàn (giữ CTR). Lineage + hợp đồng input chốt. |
 
 > Quản version: commit + tag `pipeline-vX` ở mốc nghiệm thu, push GitHub **private** (code+doc; data shield bởi `.gitignore`). Tái lập số version cũ (snapshot data) + UI lineage = giai đoạn sau. Nghiệp vụ RIÊNG shop ở `BLUEPRINT.md §8`.

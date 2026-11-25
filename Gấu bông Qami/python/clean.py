@@ -28,8 +28,30 @@ from config import (ROOT, RAW, COST_FILE, OLD_MANUAL, CLEANED, WEB, DATA_JS, REP
 # In : rawdata/*.xlsx (income, orders, onhold)
 # Out: DataFrame đã ép kiểu ID về chuỗi (chưa biến đổi số liệu)
 # ============================================================
+# TikTok đổi tên vài cột phụ giữa các lần xuất (income_202609 = tiếng Anh) → đưa về tên trong COST_GROUPS
+INCOME_RENAME = {"SFR service fee": "Phí dịch vụ SFR",
+                 "Guarantee program reimbursement": "Hoàn tiền chương trình đảm bảo"}
+
+
 def read_income():
-    df = pd.read_excel(RAW / FILES["income"], sheet_name=SHEETS["income"])
+    """Đọc MỌI file income: income_YYYYMM.xlsx (bulk đến hết tháng đó) + income.xlsx (bản mới nối đuôi).
+    Sửa 2026-11-25 (Chủ duyệt "tự giải quyết"): trước chỉ đọc income.xlsx → quyết toán nằm riêng ở
+    income_202609 (đơn T8–T9) bị BỎ SÓT khỏi dashboard. Các file CHỒNG nhau (202609 lấn QT T10 = 502 dòng
+    trùng income.xlsx) → bỏ dòng trùng theo MỌI cột chung (sau khi đổi tên cột Anh→Việt)."""
+    pat = re.compile(r"^income(_\d{6})?\.xlsx$")
+    files = sorted(f for f in RAW.glob("income*.xlsx") if pat.match(f.name)) or [RAW / FILES["income"]]
+
+    def one(f):   # MỌI cột "ID…" đọc dạng CHUỖI: file này lưu chữ, file kia lưu số → so trùng sẽ trượt + ID dài mất số
+        head = pd.read_excel(f, sheet_name=SHEETS["income"], nrows=0).columns
+        return (pd.read_excel(f, sheet_name=SHEETS["income"], dtype={c: str for c in head if "ID" in str(c)})
+                .rename(columns=INCOME_RENAME))
+    parts = [one(f) for f in files]
+    common = [c for c in parts[0].columns if all(c in p.columns for p in parts)]
+    df = pd.concat(parts, ignore_index=True)
+    n0 = len(df)
+    df = df.drop_duplicates(subset=common).reset_index(drop=True)
+    if len(files) > 1:
+        print(f"     income: {len(files)} file ({', '.join(f.name for f in files)}) · {n0} dòng · bỏ {n0 - len(df)} dòng trùng")
     df["ID đơn hàng/điều chỉnh"] = df["ID đơn hàng/điều chỉnh"].astype(str)
     return df
 

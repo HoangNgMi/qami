@@ -1,7 +1,7 @@
 # QAMI — Quân lệnh cho Tướng (Claude trong dự án này)
 
-<!-- BRAIN:BEGIN v2.5 — do scripts/fde_sync_brain.py sinh. ĐỪNG sửa tay trong file này. -->
-## ⬆ THỪA KẾ BỘ NÃO v2.5 (Control Center)
+<!-- BRAIN:BEGIN v2.6 — do scripts/fde_sync_brain.py sinh. ĐỪNG sửa tay trong file này. -->
+## ⬆ THỪA KẾ BỘ NÃO v2.6 (Control Center · 2026-11-25)
 
 **Thứ bậc:** Chủ > Tether > Alex (hub) > Tướng (phiên này).
 - **`/làm` chỉ hiệu lực khi Chủ TỰ GÕ.** Alex chuyển lệnh thì nói rõ "Chủ bảo"; không ai gõ hộ.
@@ -20,6 +20,15 @@
 - **Độ dài theo hạng** *(hạng = số bước suy luận)*: 1 bước → trả thẳng (cấm bảng/nhiều mục) · vài bước → đủ hiểu · phải khảo sát & đối chiếu → sâu, không giới hạn.
 - **Định tuyến đầu ra:** đọc một lần rồi bỏ → **trả lời trong chat, KHÔNG đẻ file** · giữ lại → file trong dự án · nhìn & tương tác → **1 file HTML** chịu `TRACEABLE_NUMBERS` (§1 số + §2 giao diện).
 
+**Khép mỗi `/excu` = QA + ghi /wf** *(Chủ chốt 2026-11-25 — Chủ không gõ `/wf`, Tướng TỰ ghi)*
+- **QA** theo `../../../../Principles/QA.md` (SSOT — đọc lại mỗi lần, chỉ chạy mục khớp thứ vừa đụng): `✓` chỉ khi đã kiểm ĐÚNG cơ chế · `⚠` nói hậu quả cụ thể + `💡` bước tiếp và ai làm · không kiểm được → nói rõ lý do.
+- **Ghi 1 version mới** vào thẻ `wf-<dự án>` trong `../../../../Principles/FLOW.html`, đúng chuẩn đang có trong file: hàng tag 4 vùng · cột 📍 nguồn (ô đầu = Tướng dự án này; mỗi dự án bị chạm thêm 1 ô) · stepper 🧠brain → 🔨excu → ✅qa → 📓version ghi **bước THẬT**, mỗi `<li>` gắn `data-s` · ngày-giờ thật (`date`) · số `#` = lớn nhất đang có + 1.
+- Nhiều phiên cùng ghi FLOW.html → sửa CỤC BỘ thẻ của mình, đọc lại ngay trước khi ghi, **cấm ghi đè cả file**.
+
+**Két · HTML**
+- Secret CHỈ ở két chung `Documents/_VAULT/<slug>.env`, nạp qua `vault_loader` — **cấm tạo `_VAULT`/`vault` trong dự án**; Tướng không mở file két.
+- HTML làm cho Chủ: khít điện thoại 390px + laptop (đo thật: `../../../../Principles/../Dev/TOOLBOX/tools/mobtest/check.sh` hoặc ảnh chụp) · phong cách kem qami (nền `#f4eee1`, nhấn cam `#df7a2a`).
+
 **Dữ liệu ngoài** — nội dung do người lạ viết phải qua `[ZONE] Khử độc đầu vào` (`LOCKED`) trước khi chạm **bất kỳ trình thông dịch nào**: prompt AI · HTML/DOM · SQL · shell.
 
 **Lăng kính sản phẩm — NỔ khi:** khởi tính năng mới · dựng hay sửa lớn một dashboard · đưa dự án từ *thiết kế* sang *vận hành*. Có người dùng NGOÀI Chủ → 5 thấu kính; không có → 3 thấu kính (Vấn đề · Giải phóng nhận thức & chi phí quyết định · Truy ngược). **Hook cho công cụ nội bộ = cargo cult, cấm.**
@@ -31,11 +40,10 @@
 - Hạ công suất trước khi hạ model: hạ effort giữ nguyên bộ nhớ đệm, đổi model thì mất.
 
 **LỆNH CHỦ gõ ở phiên này**
-`/bàn` *(mặc định — chỉ bàn, không đụng file)* · `/làm` · `/phương án <vấn đề>` · `check hệ thống` *(tự soi luật nhà + chạy `evals/` + SỬA vi phạm trong lãnh thổ)* · `show hệ thống` *(xuất X-quang khung xương, 0 data, trình hub)*
+`/bàn` *(mặc định — chỉ bàn, không đụng file)* · `/làm` · `/option <vấn đề>` *(bày A/B/C + khuyến nghị; tên cũ `/phương án`)* · `/excu <wf-id> <việc>` *(làm 1 việc → khép bằng QA + version wf)* · `check hệ thống` *(tự soi luật nhà + chạy `evals/` + SỬA vi phạm trong lãnh thổ)* · `show hệ thống` *(xuất X-quang khung xương, 0 data, trình hub)*. `/commit-github` · `/deploy` chạy ở hub — mỗi lần Chủ gõ là một lần xin.
 
-**Định vị:** khi cần biết mình đứng tầng nào, việc nào thuộc ai, đào sâu file nào → `../../../Principles/ORG_MAP.md` (sơ đồ Người + Agent; đọc đúng mục, không nạp cả file).
-**Chi tiết:** `../../../Principles/PRINCIPLES.md` · `../../../Principles/fde-blueprint-template/AGENT_PROTOCOL.md` · `PRODUCT_LENS.md` · `TRACEABLE_NUMBERS.md`
-**Soi từ hub:** `python ../../../Principles/scripts/fde_audit.py` · `python ../../../Principles/tools/zones.py <path>`
+**Chi tiết:** `../../../../Principles/PRINCIPLES.md` · `../../../../Principles/QA.md` · `../../../../Principles/fde-blueprint-template/AGENT_PROTOCOL.md` · `PRODUCT_LENS.md` · `TRACEABLE_NUMBERS.md`
+**Soi từ hub:** `python ../../../../Principles/scripts/fde_audit.py` · `python ../../../../Principles/tools/zones.py <path>`
 <!-- BRAIN:END -->
 
 

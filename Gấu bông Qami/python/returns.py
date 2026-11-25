@@ -101,15 +101,21 @@ def load_income():
     return ev[ev["dc"].notna() & ev["ds"].notna()]
 
 
-def load_pending():
-    """Đơn CHƯA quyết toán (ước tính) — dòng 'Chưa quyết toán' của P&L (pipeline dựng từ onhold)."""
+def load_pl():
+    """Từ P&L (pipeline): GIÁ VỐN mỗi đơn (Cost_COGS — cột dashboard dùng; KHÔNG dùng Abs_COGS bị thổi phồng)
+    + tiền ƯỚC TÍNH của đơn CHƯA quyết toán (dòng 'Chưa quyết toán', pipeline dựng từ onhold)."""
     if not config.CLEANED.exists():
-        return None
+        return None, None
     p = pd.read_excel(config.CLEANED, dtype={"ID đơn hàng/điều chỉnh": str})
-    p = p[(p["Trạng thái quyết toán"] == "Chưa quyết toán") & (p["Loại giao dịch"] == "Đơn hàng")]
-    return pd.DataFrame({"g": p["Tổng doanh thu"].fillna(0).values, "f": p["Tổng phí"].fillna(0).values,
-                         "n": p["Tổng số tiền quyết toán"].fillna(0).values},
-                        index=p["ID đơn hàng/điều chỉnh"].astype(str)).groupby(level=0).sum()
+    p = p[p["Loại giao dịch"] == "Đơn hàng"]
+    idx = p["ID đơn hàng/điều chỉnh"].astype(str)
+    pend_m = p["Trạng thái quyết toán"] == "Chưa quyết toán"
+    cogs = pd.Series((-p["Cost_COGS"]).fillna(0).values, index=idx)[~pend_m.values].groupby(level=0).sum()
+    q = p[pend_m]
+    pend = pd.DataFrame({"g": q["Tổng doanh thu"].fillna(0).values, "f": q["Tổng phí"].fillna(0).values,
+                         "n": q["Tổng số tiền quyết toán"].fillna(0).values, "cg": (-q["Cost_COGS"]).fillna(0).values},
+                        index=q["ID đơn hàng/điều chỉnh"].astype(str)).groupby(level=0).sum()
+    return cogs, pend
 
 
 # ============================================================
@@ -120,18 +126,21 @@ def build_payload():
     if o is None or o.empty:
         return None
     ev = load_income()
-    pend = load_pending()
+    cogs, pend = load_pl()
     pos = {oid: i for i, oid in enumerate(o.index)}
 
-    for k in ("ig", "ir", "if", "in", "pg", "pf", "pn"):
+    for k in ("ig", "ir", "if", "in", "cg", "pg", "pf", "pn", "pcg"):
         o[k] = 0.0
     if ev is not None and len(ev):
         s = ev.groupby("oid")[["g", "r", "f", "n"]].sum()
         j = o.index.intersection(s.index)
         o.loc[j, ["ig", "ir", "if", "in"]] = s.loc[j, ["g", "r", "f", "n"]].values
+    if cogs is not None and len(cogs):
+        j = o.index.intersection(cogs.index)
+        o.loc[j, "cg"] = cogs.loc[j].values
     if pend is not None and len(pend):
         j = o.index.intersection(pend.index)
-        o.loc[j, ["pg", "pf", "pn"]] = pend.loc[j, ["g", "f", "n"]].values
+        o.loc[j, ["pg", "pf", "pn", "pcg"]] = pend.loc[j, ["g", "f", "n", "cg"]].values
 
     def enc(col):
         vals = sorted(v for v in o[col].unique() if v != "")
@@ -148,13 +157,19 @@ def build_payload():
     ints = lambda c: [int(round(x)) for x in o[c]]  # noqa: E731
 
     # dòng quyết toán: ngày tạo + ngày QT (từ điển ngày riêng) · o = vị trí đơn trong mảng đơn (-1 = đơn không có trong file đơn)
-    E = {"o": [], "dc": [], "ds": [], "g": [], "r": [], "f": [], "n": []}
+    E = {"o": [], "dc": [], "ds": [], "g": [], "r": [], "f": [], "n": [], "cg": []}
     edates = []
     if ev is not None and len(ev):
         edates = sorted(set(ev["dc"]) | set(ev["ds"]))
         ei = {v: i for i, v in enumerate(edates)}
+        # giá vốn của đơn → gắn vào DÒNG QUYẾT TOÁN ĐẦU TIÊN của đơn (chế độ dòng tiền)
+        ev = ev.reset_index(drop=True)
+        first = ev.sort_values(["ds"], kind="stable").drop_duplicates("oid").index
+        ev["cg"] = 0.0
+        if cogs is not None:
+            ev.loc[first, "cg"] = ev.loc[first, "oid"].map(cogs).fillna(0).values
         E = {"o": [pos.get(x, -1) for x in ev["oid"]], "dc": [ei[x] for x in ev["dc"]], "ds": [ei[x] for x in ev["ds"]],
-             **{k: [int(round(x)) for x in ev[k]] for k in ("g", "r", "f", "n")}}
+             **{k: [int(round(x)) for x in ev[k]] for k in ("g", "r", "f", "n", "cg")}}
     orphan = sum(1 for x in E["o"] if x < 0)
     cnt = o["t"].value_counts().reindex(range(5), fill_value=0)
     fmt = lambda s: f"{s:,.0f}".replace(",", ".")  # noqa: E731
@@ -167,8 +182,8 @@ def build_payload():
             "kocs": kocs, "prods": prods,
             "d": d, "t": [int(x) for x in o["t"]], "b": b, "rs": rs, "pv": pv, "pm": [int(x) for x in o["pay"]],
             "ch": ch, "kc": kc, "pr": pr,
-            "ig": ints("ig"), "ir": ints("ir"), "if": ints("if"), "in": ints("in"),
-            "pg": ints("pg"), "pf": ints("pf"), "pn": ints("pn"),
+            "ig": ints("ig"), "ir": ints("ir"), "if": ints("if"), "in": ints("in"), "cg": ints("cg"),
+            "pg": ints("pg"), "pf": ints("pf"), "pn": ints("pn"), "pcg": ints("pcg"),
             "edates": edates, "e": E, "totals": totals}
 
 

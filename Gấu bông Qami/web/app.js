@@ -478,20 +478,21 @@ function rtRows(r){ const out=[]; if(!RET) return out;
   return out; }
 function rtAgg(ix){ const a={N:ix.length,n:[0,0,0,0,0]}; ix.forEach(i=>a.n[RET.t[i]]++); return a; }   // ĐẾM đơn theo loại
 function rtMoney(r){   // TIỀN income theo chế độ hiện tại → m.t[0..4] + m.p (chờ QT) · mỗi ô {g,r,f,n,c}
-  const z=()=>({g:0,r:0,f:0,n:0,c:0}), m={t:[z(),z(),z(),z(),z()],p:z()};
+  const z=()=>({g:0,r:0,f:0,n:0,cg:0,c:0}), m={t:[z(),z(),z(),z(),z()],p:z()};
   if(!RET) return m;
   if(RT_MODE==="order"){
     for(let i=0;i<RET.t.length;i++){ const d=RET.dates[RET.d[i]]; if(r&&(d<r[0]||d>r[1])) continue;
-      if(!(RET.ig[i]||RET.ir[i]||RET.if[i]||RET.in[i])) continue;
-      const x=m.t[RET.t[i]]; x.g+=RET.ig[i]; x.r+=RET.ir[i]; x.f+=RET.if[i]; x.n+=RET.in[i]; x.c++; }
+      if(!(RET.ig[i]||RET.ir[i]||RET.if[i]||RET.in[i]||RET.cg[i])) continue;
+      const x=m.t[RET.t[i]]; x.g+=RET.ig[i]; x.r+=RET.ir[i]; x.f+=RET.if[i]; x.n+=RET.in[i]; x.cg+=RET.cg[i]; x.c++; }
   } else { const E=RET.e;
     for(let k=0;k<E.o.length;k++){ const d=RET.edates[E.ds[k]]; if(r&&(d<r[0]||d>r[1])) continue;
-      const x=m.t[E.o[k]>=0?RET.t[E.o[k]]:0]; x.g+=E.g[k]; x.r+=E.r[k]; x.f+=E.f[k]; x.n+=E.n[k]; x.c++; } }
+      const x=m.t[E.o[k]>=0?RET.t[E.o[k]]:0]; x.g+=E.g[k]; x.r+=E.r[k]; x.f+=E.f[k]; x.n+=E.n[k]; x.cg+=E.cg[k]; x.c++; } }
   if(RT_PEND) for(let i=0;i<RET.t.length;i++){ if(!(RET.pg[i]||RET.pn[i])) continue; const d=RET.dates[RET.d[i]];
-    if(r&&(d<r[0]||d>r[1])) continue; m.p.g+=RET.pg[i]; m.p.f+=RET.pf[i]; m.p.n+=RET.pn[i]; m.p.c++; }
+    if(r&&(d<r[0]||d>r[1])) continue; m.p.g+=RET.pg[i]; m.p.f+=RET.pf[i]; m.p.n+=RET.pn[i]; m.p.cg+=RET.pcg[i]; m.p.c++; }
   const S=k=>m.t.reduce((a,x)=>a+x[k],0)+m.p[k];
   m.G=S("g"); m.R=S("r"); m.F=S("f"); m.N=S("n");
   m.Fbad=m.t[2].f+m.t[3].f+m.t[4].f; m.Nbad=m.t[2].n+m.t[3].n+m.t[4].n;
+  m.CG=S("cg"); m.L=m.N-m.CG; m.Lbad=m.Nbad-(m.t[2].cg+m.t[3].cg+m.t[4].cg);   // lãi sau giá vốn (= cách dashboard tính lãi ròng)
   return m; }
 function rtGroup(ix,key){ const g={};   // gom theo 1 chiều (pr/kc/pv): N + số đơn mỗi loại + hoàn trên income (theo đơn)
   ix.forEach(i=>{ const v=RET[key][i]; const o=g[v]||(g[v]={k:v,N:0,n:[0,0,0,0,0],lost:0}); o.N++; o.n[RET.t[i]]++; o.lost-=RET.ir[i]; });
@@ -522,7 +523,7 @@ function drawRtKpis(){ const host=el("rtkpis"); if(!host||!RET) return;
     {l:"Hoàn & đảo đơn",v:fV(-m.R),vc:"neg",s:fP(rP(-m.R,m.G))+" income gộp"},
     {l:"Phí bị trừ",v:fV(-m.F),s:fP(rP(-m.F,m.G))+" gộp · đơn lỗi "+fV(-m.Fbad)},
     {l:"Thực nhận",v:fV(m.N),vc:"pos",s:fP(rP(m.N,m.G))+" income gộp"+(RT_PEND&&m.p.n?" · chờ QT ~"+fV(m.p.n):"")},
-    {l:"Đơn lỗi kéo thực nhận",v:fV(m.Nbad),vc:m.Nbad<0?"neg":"",s:"phí đơn hủy/thất bại/hoàn không bù được"},
+    {l:"Lãi sau giá vốn",v:fV(m.L),vc:m.L>=0?"pos":"neg",s:fP(rP(m.L,m.G))+" gộp · đơn lỗi kéo "+fV(m.Lbad)},
     {l:"Tỷ lệ đơn lỗi",v:fP(bad),vc:"neg",s:"hủy "+fP(rP(a.n[2],a.N))+" · thất bại "+fP(rP(a.n[3],a.N))+" · hoàn "+fP(rP(a.n[4],a.N)),x:dl}];
   host.innerHTML=K.map(k=>`<div class="kpi"><div class="l">${k.l}</div><div class="v ${k.vc||""}">${k.v}</div><div class="s">${k.s}</div>${k.x||""}</div>`).join("");
 }
@@ -537,7 +538,9 @@ function drawRtWater(){ const m=rtMoney(vRange(F("rtWater"))), G0=m.G||1;
   const fOk=-(m.t[0].f+m.t[1].f+m.p.f), fBad=-m.Fbad;
   run-=fOk; push("− Phí đơn thường",Math.max(0,run),fOk,"#a89f8c");
   run-=fBad; push("− Phí đơn lỗi",Math.max(0,run),fBad,"#cf3b3b");
-  push("= Thực nhận",0,run,T.good,1);
+  push("= Thực nhận",0,run,"#2a78d6",1);
+  run-=m.CG; push("− Giá vốn",Math.max(0,run),m.CG,"#8a8296");
+  push("= Lãi",0,run,run>=0?T.good:T.crit,1);
   gc("rtWater").setOption({
     tooltip:tip({trigger:"axis",axisPointer:{type:"shadow"},formatter:p=>{const q=p[p.length-1];
       return `<b>${q.name}</b><br>${fF(q.value)} đ · <b>${fP(rP(q.value,G0))}</b> income gộp`+(RT_PEND&&m.p.g&&q.dataIndex===0?`<br>gồm chờ QT ~${fV(m.p.g)}`:"");}}),
@@ -570,16 +573,16 @@ function drawRtLag(){ const host=el("rtLag"); if(!host||!RET) return;
     {cap:'<span class="qrtsw">'+btn("r","Tiền hoàn")+btn("n","Thực nhận")+'</span> ô vàng = trôi sang tháng sau (vd đơn đặt T10, hoàn quyết toán T11) · % = phần của hàng'});
   host.querySelectorAll("[data-lag]").forEach(b=>b.onclick=()=>{ RT_LAGM=b.dataset.lag; drawRtLag(); });
 }
-function drawRtCost(){ const m=rtMoney(vRange(F("rtCost"))), G0=m.G, N0=m.N;
+function drawRtCost(){ const m=rtMoney(vRange(F("rtCost"))), G0=m.G, N0=m.N, L0=m.L;
   const row=(nm,x,cls)=>Object.assign([nm,fF(x.c),fV(x.g),fP(rP(x.g,G0)),fV(-x.r),fV(-x.f),
-    {v:"<b>"+fV(x.n)+"</b>",c:x.n<0?"hot":""},fP(rP(x.n,N0))],{cls:cls||""});
+    {v:fV(x.n),c:x.n<0?"hot":""},fV(x.cg),{v:"<b>"+fV(x.n-x.cg)+"</b>",c:(x.n-x.cg)<0?"hot":""},fP(rP(x.n-x.cg,L0))],{cls:cls||""});
   const rows=[0,1,2,3,4].filter(t=>m.t[t].c).map(t=>row(RET.types[t],m.t[t],t>=2?"bad":""));
   if(RT_PEND && m.p.c) rows.push(row("Chờ quyết toán (ước)",m.p,"pend"));
   const cnt=m.t.reduce((s,x)=>s+x.c,0)+m.p.c;
   rtTable("rtCost",[["Loại đơn"],[RT_MODE==="order"?"Đơn":"Dòng QT",RT_MODE==="order"?"số đơn có income":"số dòng quyết toán trong khoảng"],["Income gộp"],["% gộp","phần của income gộp"],
-    ["Hoàn"],["Phí bị trừ"],["Thực nhận"],["% thực nhận","phần của tổng thực nhận"]],rows,
-    {cap:"Phân bổ income "+RT_ML()+(RT_PEND?" · gồm chờ quyết toán (ước tính)":"")+" · nền % = income gộp / tổng thực nhận",
-     foot:["<b>Cộng</b>",fF(cnt),"<b>"+fV(G0)+"</b>","100%",fV(-m.R),fV(-m.F),"<b>"+fV(N0)+"</b>","100%"]});
+    ["Hoàn"],["Phí bị trừ"],["Thực nhận"],["Giá vốn","Cost_COGS trên P&L (cost_list Chủ nhập)"],["Lãi","thực nhận − giá vốn"],["% lãi","phần của tổng lãi (loại lỗi thường ÂM = kéo xuống)"]],rows,
+    {cap:"Phân bổ income "+RT_ML()+(RT_PEND?" · gồm chờ quyết toán (ước tính)":"")+" · nền % = income gộp / tổng lãi",
+     foot:["<b>Cộng</b>",fF(cnt),"<b>"+fV(G0)+"</b>","100%",fV(-m.R),fV(-m.F),fV(N0),fV(m.CG),"<b>"+fV(L0)+"</b>","100%"]});
 }
 function drawRtTrend(){ const ix=rtRows(vRange(F("rtTrend"))), by={};
   ix.forEach(i=>{ const d=RET.dates[RET.d[i]], o=by[d]||(by[d]={N:0,n:[0,0,0,0,0]}); o.N++; o.n[RET.t[i]]++; });
@@ -782,8 +785,10 @@ const R_RTMODE='<p><b>2 chế độ tiền</b> (nút đầu tab) — 1 đơn có
   '<li><b>Gồm đơn chưa quyết toán</b> (công tắc): cộng thêm đơn đang treo (ước tính từ file onhold, có thể đổi) theo ngày đặt — để tháng gần nhất không bị thiếu.</li></ul>';
 const R_RTMONEY='<ul><li><b>Income gộp</b> = "Tổng phụ sau giảm giá của người bán" (trước hoàn) — <b>nền 100%</b> của mọi %.</li>'+
   '<li><b>Hoàn</b> = "Tổng phụ của khoản hoàn tiền sau giảm giá…" · <b>Phí</b> = "Tổng phí" (sàn + KOC + ads + vận chuyển…).</li>'+
-  '<li><b>Thực nhận</b> = "Tổng số tiền quyết toán" = gộp − hoàn − phí (khớp tuyệt đối từng dòng).</li></ul>';
-const R_RTWARN='<p class="qsrc">⚠ Đơn đặt GẦN ĐÂY chưa kịp giao thất bại / hoàn → tỷ lệ & tiền hoàn của những ngày cuối THẤP GIẢ (bật "Gồm đơn chưa quyết toán" để thấy phần đang treo). Giá vốn KHÔNG nằm trong income — xem tab Tổng quan cho lãi ròng.</p>';
+  '<li><b>Thực nhận</b> = "Tổng số tiền quyết toán" = gộp − hoàn − phí (khớp tuyệt đối từng dòng).</li>'+
+  '<li><b>Giá vốn</b> = Cost_COGS từng đơn trên P&amp;L (cost_list Chủ nhập — cùng số tab Tổng quan) · chế độ dòng tiền: gắn vào dòng quyết toán ĐẦU của đơn.</li>'+
+  '<li><b>Lãi</b> = thực nhận − giá vốn (= cách tab Tổng quan tính lãi ròng).</li></ul>';
+const R_RTWARN='<p class="qsrc">⚠ Đơn đặt GẦN ĐÂY chưa kịp giao thất bại / hoàn → tỷ lệ & tiền hoàn của những ngày cuối THẤP GIẢ (bật "Gồm đơn chưa quyết toán" để thấy phần đang treo). Giá vốn của đơn giao thất bại = số P&amp;L đang ghi — nếu hàng đã về kho nguyên vẹn thì phần này không mất thật.</p>';
 const RULES={
   kpi:["Chỉ số tổng (KPI)", R_SRC+'<ul><li><b>Doanh thu</b> = Σ "Tổng doanh thu" các đơn trong khoảng.</li>'+
     '<li><b>Tổng chi phí</b> = COGS + Platform + Ads + KOC + Phí sàn phụ trội.</li>'+
@@ -827,10 +832,10 @@ const RULES={
     '<li>Xếp GMV video liên kết ↓ · top 20, "Hiện tất cả" để xem hết.</li></ul>'+R_FLT],
   rtkpi:["Chỉ số Hoàn & Hủy (KPI)", R_RT+R_RTMODE+R_RTMONEY+'<ul><li><b>Hoàn &amp; đảo đơn</b> = Σ hoàn; % = ÷ income gộp.</li>'+
     '<li><b>Phí bị trừ</b> · "đơn lỗi" = phần phí rơi vào đơn hủy / giao thất bại / hoàn.</li>'+
-    '<li><b>Đơn lỗi kéo thực nhận</b> = Σ thực nhận của đơn hủy + giao thất bại + hoàn (âm = phí không bù được).</li>'+
+    '<li><b>Lãi sau giá vốn</b> = thực nhận − giá vốn · "đơn lỗi kéo" = lãi của đơn hủy + giao thất bại + hoàn (âm = phí + giá vốn không bù được).</li>'+
     '<li><b>Tỷ lệ đơn lỗi</b> = (hủy + thất bại + hoàn) ÷ đơn ĐẶT trong khoảng (đếm đơn, luôn theo ngày đặt) · so kỳ trước = chênh điểm % với khoảng ngay trước.</li></ul>'+R_RTTYPE+R_RTWARN],
-  rtWater:["Dòng chảy income", R_RT+R_RTMODE+R_RTMONEY+'<ul><li>Cột đầu = <b>Income gộp</b> (100%). Mỗi bậc rơi = khoản trừ: hoàn theo loại đơn (hủy trước ship · giao thất bại · trả hàng · hoàn khác) → <b>= Doanh thu</b> → phí đơn thường · <b>phí đơn lỗi</b> → <b>= Thực nhận</b>.</li>'+
-    '<li>Nhãn mỗi cột = số tiền · <b>% income gộp</b> (các bậc rơi + thực nhận cộng lại = 100%).</li></ul>'+R_RTWARN+R_FLT],
+  rtWater:["Dòng chảy income", R_RT+R_RTMODE+R_RTMONEY+'<ul><li>Cột đầu = <b>Income gộp</b> (100%). Mỗi bậc rơi = khoản trừ: hoàn theo loại đơn (hủy trước ship · giao thất bại · trả hàng · hoàn khác) → <b>= Doanh thu</b> → phí đơn thường · <b>phí đơn lỗi</b> → <b>= Thực nhận</b> → giá vốn → <b>= Lãi</b>.</li>'+
+    '<li>Nhãn mỗi cột = số tiền · <b>% income gộp</b> (các bậc rơi + lãi cộng lại = 100%).</li></ul>'+R_RTWARN+R_FLT],
   rtLag:["Hoàn trễ kỳ — tháng đặt × tháng quyết toán", R_RT+'<ul><li><b>Hàng</b> = tháng ĐẶT đơn · <b>cột</b> = tháng QUYẾT TOÁN (tiền thật chạy).</li>'+
     '<li>Ô <b>trên đường chéo</b> = quyết toán trong chính tháng đặt · ô <b>vàng</b> (bên phải) = <b>trôi sang tháng sau</b> — vd đơn A đặt T10, hoàn quyết toán T11.</li>'+
     '<li>% trong ô = phần của cả hàng · cột cuối = <b>% trôi sang tháng sau</b>.</li>'+
