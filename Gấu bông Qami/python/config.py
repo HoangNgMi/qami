@@ -29,6 +29,10 @@ SHEETS = {"income": "Chi tiết đơn hàng", "orders": "OrderSKUList", "cost_li
 # ---------- Nguồn VIDEO/KOC (tab web "Video và KOC") — NGOÀI pipeline COGS ----------
 # Tuỳ chọn: thiếu file/cột thì pipeline VẪN chạy (chỉ bỏ qua tab video).
 VIDEO_FILE = "Video_Analysis_Video_List.xlsx"
+# File THEO THÁNG (2026-11-25): Video_Analysis_Video_List_YYYYMM.xlsx — mỗi file = video CÓ HOẠT ĐỘNG trong
+# tháng đó, số liệu CỦA RIÊNG tháng đó (1 video có thể nằm ở nhiều tháng → cộng theo video là đúng).
+# Có ≥1 file tháng thì ĐỌC TẤT CẢ file tháng và BỎ QUA VIDEO_FILE gộp (khung cũ dễ sai/cắt hẹp).
+VIDEO_MONTHLY = r"^Video_Analysis_Video_List_(\d{6})\.xlsx$"
 VIDEO_SHEET = "Sheet 1"
 VIDEO_COLS = {            # trái = tên code dùng · phải = tên cột THẬT trong file
     "user":   "Tên nhà sáng tạo",            # KOC / nhà sáng tạo
@@ -39,7 +43,8 @@ VIDEO_COLS = {            # trái = tên code dùng · phải = tên cột THẬ
     "comm":   "Hoa hồng ước tính",
     "sold":   "Số món bán ra ghi nhận vào video",
     "orders": "Đơn hàng nhờ video",
-    "ctr":    "CTR",
+    "ctr":    "CTR",            # chỉ DỰ PHÒNG — CTR tự tính = clicks ÷ imps (file tháng 11 TikTok đã bỏ cột này)
+    "imps":   "Lượt hiển thị sản phẩm trong video",   # mẫu số CTR (đúng định nghĩa TikTok)
     "comp":   "Tỷ lệ xem hết",
     "views":  "Lượt xem video",
     "clicks": "Lượt nhấp vào sản phẩm trong video",   # mẫu số CTOR = số đơn / số click

@@ -133,6 +133,8 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
 #modbody tfoot td{border-top:2px solid #e7dec9;border-bottom:none}
 #modbody .mdesc{font-size:10.5px;color:var(--muted);font-weight:400}
 #modbody b{color:var(--ink)}
+.crh{font-size:13.5px;margin:16px 0 2px;color:#5f584a}.crh:first-child{margin-top:4px}
+.ctag{font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px;background:#ece6f7;color:#6a5bb5;white-space:nowrap}
 .hmeval{position:sticky;right:0;z-index:5;flex:0 0 88px;width:88px;background:var(--surface);
   border-left:1px solid #eadfc8;box-shadow:-6px 0 8px -7px rgba(80,60,20,.22);
   display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:0 7px}
@@ -194,6 +196,9 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
       <div id="gmetric" class="gmetric"></div>
       <div id="chGantt"></div></div>
 
+    <div class="card"><div class="chd"><h2>🎬 Phễu &amp; Creative <span class="badge">toàn kỳ</span> <span class="note">(từ Creative data — mỗi bài đăng/video chạy ads · mở phễu Hiển thị→Click→Đơn mà campaign file thiếu)</span></h2><button class="ibtn" data-rule="creative">ⓘ Rule</button></div>
+      <div id="crWrap"></div></div>
+
     <div class="card"><div class="chd"><h2>🏷️ Bảng chiến dịch <span class="note">(xếp theo spend · bấm 1 dòng để bung tên · nền xám = đã tắt)</span></h2><button class="ibtn" data-rule="table">ⓘ Rule</button><button class="lbtn" data-flt="table">⚙ lọc riêng</button></div>
       <div class="miniflt" id="flt-table" style="display:none"></div>
       <div style="overflow:auto;max-height:440px"><table id="tbl"></table></div></div>
@@ -205,6 +210,7 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
 
 <script src="ads_data.js"></script>
 <script src="mmm_data.js"></script>
+<script src="creative_data.js"></script>
 <script>
 (function(){
   var A=window.QAMI_ADS, M=window.QAMI_MMM;
@@ -281,12 +287,36 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
       'Giờ demand đỉnh (toàn kỳ): <b>'+top.join(', ')+'</b>. Biểu đồ THỨ bên trái chạy theo bộ lọc.';
   }
 
+  /* ---------- Phễu & Creative (toàn kỳ, từ creative_data.js) ---------- */
+  var CR=window.QAMI_CREATIVE;
+  if(CR){
+    var pc=v=>v==null?'—':(v*100).toFixed(1)+'%', beC=mr?1/mr:3.64;
+    var ca=CR.campaigns.map(function(c){
+      return '<tr><td class="l">'+esc(c.name)+'</td><td>'+fM(c.impr)+'</td><td>'+f(c.clicks)+'</td><td>'+pc(c.ctr)+'</td><td>'+pc(c.cvr)+'</td><td>'+f(c.cpc)+'đ</td><td>'+fM(c.cpm)+'</td><td><b>'+c.roas+'</b></td></tr>';
+    }).join('');
+    var ty=(CR.types||[]).map(function(t){
+      return '<tr><td class="l">'+esc(t.ctype)+' <span class="note">('+t.n+')</span></td><td>'+fM(t.spend)+'</td><td>'+pc(t.ctr)+'</td><td>'+pc(t.cvr)+'</td><td>'+f(t.cpc)+'đ</td><td>'+fM(t.cpm)+'</td><td><b>'+t.roas+'</b></td></tr>';
+    }).join('');
+    var cr=CR.creatives.slice(0,30).map(function(c){
+      return '<tr class="'+((c.roas!=null&&c.roas<beC)?'lose':'')+'"><td class="l">'+esc(c.spu||c.post||'—')+' <span class="ctag">'+esc(c.ctype||'—')+'</span></td><td class="l">'+esc(c.camp)+'</td><td>'+fM(c.spend)+'</td><td><b>'+(c.roas==null?'—':c.roas)+'</b></td><td>'+pc(c.ctr)+'</td><td>'+pc(c.cvr)+'</td></tr>';
+    }).join('');
+    document.getElementById('crWrap').innerHTML=
+      '<h3 class="crh">Phễu theo chiến dịch <span class="note">(Hiển thị → Click = CTR → Đơn = CVR)</span></h3><div style="overflow:auto"><table><thead><tr><th class="l">Chiến dịch</th><th>Hiển thị</th><th>Click</th><th>CTR</th><th>CVR</th><th>CPC</th><th>CPM</th><th>ROAS</th></tr></thead><tbody>'+ca+'</tbody></table></div>'
+     +'<h3 class="crh">Theo định dạng nội dung <span class="note">(Video vs Thẻ SP vs…)</span></h3><div style="overflow:auto"><table><thead><tr><th class="l">Định dạng (số creative)</th><th>Spend</th><th>CTR</th><th>CVR</th><th>CPC</th><th>CPM</th><th>ROAS</th></tr></thead><tbody>'+ty+'</tbody></table></div>'
+     +'<h3 class="crh">Top creative theo spend <span class="note">(đỏ = ROAS dưới hoà vốn '+beC.toFixed(2)+')</span></h3><div style="overflow:auto;max-height:360px"><table><thead><tr><th class="l">Sản phẩm · định dạng</th><th class="l">Chiến dịch</th><th>Spend</th><th>ROAS</th><th>CTR</th><th>CVR</th></tr></thead><tbody>'+cr+'</tbody></table></div>';
+  }
+
   /* ========== FILTER ENGINE ========== */
   function inRange(d,st){ return (!st.from||d>=st.from)&&(!st.to||d<=st.to); }
   function pickRows(st){ var cs=st.camps; return ROWS.filter(r=> inRange(r.d,st) && (cs==null||cs[r.ci])); }
   function jsdow(d){var p=d.split('-');return (new Date(+p[0],+p[1]-1,+p[2]).getDay()+6)%7;}
   function presetRange(k){
     if(k==='all'||!DMAX) return {from:null,to:null};
+    if(k==='mtd'){   // LUẬT QA.md (2026-11-25): mặc định = ngày 1 tháng hiện tại → ngày mới nhất có data
+      var now=new Date(), ym=now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2), last=DMAX.slice(0,7);
+      if(last<ym) ym=last;                     // data chưa sang tháng hiện tại → tháng mới nhất có data
+      var f=ym+'-01'; return {from:(f<DMIN?DMIN:f), to:DMAX};
+    }
     var n={'7':7,'28':28,'90':90}[k]||28, dt=new Date(MAX_T-(n-1)*864e5);
     return {from:fmtT(dt), to:DMAX};
   }
@@ -453,7 +483,8 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
   /* ========== STATE + CASCADE ========== */
   var CHARTS={quad:renderQuad,trend:renderTrend,dow:renderDow,gantt:renderGantt,table:renderTable};
   function clone(s){return {from:s.from,to:s.to,camps:s.camps?Object.assign({},s.camps):null,preset:s.preset,cmp:s.cmp};}
-  var G={from:null,to:null,camps:null,preset:'all',cmp:false};
+  function defG(){ var r=presetRange('mtd'); return {from:r.from,to:r.to,camps:null,preset:'mtd',cmp:false}; }   // mặc định: tháng hiện tại
+  var G=defG();
   var L={}; Object.keys(CHARTS).forEach(id=>L[id]=clone(G));
   var miniHost={}, globalHost;
 
@@ -495,7 +526,7 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
   function controlHTML(hasCmp){
     var N=Math.max(NDAYS,1);
     return '<div class="flt">'
-      +'<div class="fpreset"><button data-p="7">7n</button><button data-p="28">28n</button><button data-p="90">90n</button><button data-p="all" class="on">Toàn kỳ</button></div>'
+      +'<div class="fpreset"><button data-p="mtd">Tháng này</button><button data-p="7">7n</button><button data-p="28">28n</button><button data-p="90">90n</button><button data-p="all">Toàn kỳ</button></div>'
       +'<div class="dslider'+(hasCmp?' has-cmp':'')+'">'
         +'<div class="drow"><span class="dlabel"></span><label class="dcmp"><input type="checkbox" class="fcmp"> So sánh kỳ trước</label></div>'
         +'<div class="slider"><div class="strack"><div class="sfill"></div></div>'
@@ -542,7 +573,7 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
   document.querySelectorAll('.lbtn[data-flt]').forEach(function(b){
     b.addEventListener('click',function(){ var id=b.getAttribute('data-flt'),h=miniHost[id]; h.style.display=(h.style.display==='none')?'block':'none'; });
   });
-  document.getElementById('gReset').addEventListener('click',function(){ G={from:null,to:null,camps:null,preset:'all',cmp:false}; applyGlobal(); });
+  document.getElementById('gReset').addEventListener('click',function(){ G=defG(); applyGlobal(); });
 
   (function(){   // thanh đổi chỉ số lưới cột (1A)
     var mb=document.getElementById('gmetric'); if(!mb) return;
@@ -583,7 +614,13 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
     table:{t:'🏷️ Bảng chiến dịch', h:'<p>Theo khung lọc:</p>'
       +'<p><code>ROAS = GMV÷Spend</code> · <code>CPA = Spend÷Đơn</code> · <code>AOV = GMV÷Đơn</code><br>'
       +'<code>Net-ROI = (GMV×biên − Spend)÷Spend</code>, biên = '+mrPct+'%.</p>'
-      +'<p><b>Đánh giá</b>: Net-ROI &lt;1 = CẮT · 1–2.1 = GIỮ · ≥2.1 = SCALE ⭐.<br><b>Chạy</b> = ngày đầu→cuối có spend; nền xám = đã tắt.</p>'}
+      +'<p><b>Đánh giá</b>: Net-ROI &lt;1 = CẮT · 1–2.1 = GIỮ · ≥2.1 = SCALE ⭐.<br><b>Chạy</b> = ngày đầu→cuối có spend; nền xám = đã tắt.</p>'},
+    creative:{t:'🎬 Phễu & Creative', h:'<p>Từ <code>Creative data</code> (ad cấp <b>bài đăng/video</b>) — mở cái <code>Product campaign data</code> THIẾU: <b>phễu</b>.</p>'
+      +'<p><code>CTR = Click ÷ Hiển thị</code> · <code>CVR = Đơn ÷ Click</code> · <code>CPC = Spend ÷ Click</code> · <code>CPM = Spend ÷ Hiển thị × 1000</code>. (CTR/CVR tính lại từ số đếm cho chắc.)</p>'
+      +'<ul><li><b>Phễu theo chiến dịch</b>: gộp creative → campaign, soi khâu yếu (ít hiển thị? thấy mà ít click? click mà ít chốt?).</li>'
+      +'<li><b>Theo định dạng</b>: Video vs Thẻ SP vs… — định dạng nào CTR/CVR/ROAS tốt, CPC rẻ.</li>'
+      +'<li><b>Top creative</b>: creative nào đáng nhân bản / cắt (ROAS dưới hoà vốn = đỏ). Đạn cho A/B creative (tầng Learn).</li></ul>'
+      +'<div class="caveat">Chạy TOÀN KỲ (file không có chiều ngày). Hook-rate video bị TikTok trả ~0 nên không dùng.</div>'}
   };
   function scoreBreakdown(d){
     var rows=[
