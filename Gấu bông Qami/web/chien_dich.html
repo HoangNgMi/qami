@@ -9,6 +9,7 @@
 :root{--bg:#fbf7ee;--surface:#fffdf8;--ink:#1a1611;--ink2:#5f584a;--muted:#938a78;--line:#e7dec9;
   --blue:#2a78d6;--orange:#df7a2a;--green:#1baf7a;--red:#cf3b3b;--amber:#e0a106}
 *{box-sizing:border-box}
+html,body{overflow-x:clip;max-width:100%}
 body{margin:0;font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);
   background:radial-gradient(1000px 500px at 15% -5%,#fffefb,transparent),var(--bg);min-height:100vh}
 .wrap{max-width:1180px;margin:0 auto;padding:26px 22px 60px}
@@ -33,7 +34,7 @@ h1{font-size:25px;margin:6px 0 2px;letter-spacing:-.4px}
 .kdelta.up{color:var(--green)}.kdelta.dn{color:var(--red)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px;box-shadow:0 4px 14px rgba(120,100,60,.07)}
 .card h2{margin:0 0 4px;font-size:16px}.card .note{color:var(--muted);font-size:12px;font-weight:400}
-.c{height:300px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.c{height:300px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}.grid2>*{min-width:0}
 @media(max-width:800px){.grid2{grid-template-columns:1fr}}
 .caveat{background:#fdf6e9;border:1px solid #e7cfae;border-left:4px solid var(--amber);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#7a5b21;margin-top:12px}
 table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:8px}
@@ -52,7 +53,8 @@ td.cname.off{background:#efeadf;color:#857c6c;border-radius:5px}
 footer{color:var(--muted);font-size:12px;margin-top:10px}
 #err{display:none;background:#fdf6e9;border:1px solid #e7cfae;border-radius:12px;padding:16px;color:#7a5b21}
 /* ----- filter ----- */
-.chd{display:flex;align-items:center;gap:10px}.chd h2{margin:0}
+.chd{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px}.chd h2{margin:0;flex:1 1 240px;min-width:0}
+.chd .ibtn+.lbtn{margin-left:0}
 .gflt{border-color:#e4d3ab;background:linear-gradient(180deg,#fffdf6,#fbf4e4)}
 .lbtn{margin-left:auto;font-size:11.5px;color:var(--ink2);background:#f3ecdd;border:1px solid var(--line);
   border-radius:999px;padding:4px 11px;cursor:pointer;white-space:nowrap}
@@ -61,7 +63,7 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
 .lbtn.diff::after{content:" ●";color:var(--orange)}
 .miniflt{margin:10px 0 2px}
 .flt{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:12px}
-.flt .fpreset{display:inline-flex;gap:4px}
+.flt{position:relative}.flt .fpreset{display:inline-flex;flex-wrap:wrap;gap:4px}
 .flt button[data-p]{font-size:11.5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;
   padding:4px 10px;cursor:pointer;color:var(--ink2)}
 .flt button[data-p].on{background:var(--orange);color:#fff;border-color:var(--orange)}
@@ -121,10 +123,11 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
 .evmore{font-size:7.5px;color:var(--muted);margin-top:1px;white-space:nowrap}
 .modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(30,22,10,.45);align-items:center;justify-content:center;padding:20px}
 .modal.on{display:flex}
-.modbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86vh;overflow:auto;padding:20px 22px;box-shadow:0 20px 60px rgba(30,22,10,.35);position:relative}
-.modbox h3{margin:0 0 10px;font-size:17px;padding-right:30px}
-.modx{position:absolute;top:12px;right:14px;border:none;background:none;font-size:18px;cursor:pointer;color:var(--ink2);line-height:1}
-#modbody{font-size:13px;line-height:1.6;color:var(--ink2)}
+.modbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(30,22,10,.35);position:relative}
+.modhd{display:flex;align-items:flex-start;gap:10px;padding:16px 14px 8px 22px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.modbox h3{margin:0;font-size:17px;flex:1;min-width:0}
+.modx{flex:0 0 auto;width:32px;height:32px;border:1px solid var(--line);border-radius:50%;background:#f8f2e6;font-size:16px;cursor:pointer;color:var(--ink);line-height:1}.modx:hover{background:#ece2cd}
+#modbody{font-size:13px;line-height:1.6;color:var(--ink2);overflow:auto;flex:1 1 auto;min-height:0;padding:10px 22px 20px;overflow-wrap:anywhere}
 #modbody code{background:#f1ead9;color:#3a2f1e;padding:1px 5px;border-radius:5px;font-size:12px}
 #modbody ul{margin:6px 0;padding-left:20px}#modbody li{margin:3px 0}
 #modbody table{width:100%;font-size:12.5px;margin-top:6px;border-collapse:collapse}
@@ -148,12 +151,19 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
 .hmhead{border-bottom:2px solid #e7dec9}
 .hmhead .hmname,.hmhead .hmeval{height:34px;background:#f6efdf}
 .hmhcell{font-size:9.5px;font-weight:700;color:#7a5b21;justify-content:center;text-align:center;line-height:1.15}
-@media(max-width:800px){.flt{font-size:11.5px}.hmname{flex-basis:124px;width:124px}.hmeval{flex-basis:78px;width:78px}}
+@media(max-width:800px){.flt{font-size:11.5px}.hmname{flex-basis:124px;width:124px}.hmeval{flex-basis:78px;width:78px}
+  .wrap{padding:18px 14px 48px}.card{padding:14px 12px}h1{font-size:21px}.big .n{font-size:28px}
+  /* dropdown chọn chiến dịch: bám theo bề rộng thanh lọc thay vì neo right:0 → không lệch ra ngoài mép trái (AC-06) */
+  .fcamp{position:static}.fcamplist{left:0;right:0;min-width:0;top:auto;margin-top:4px}
+  .modhd{padding:14px 12px 8px 14px}#modbody{padding:8px 14px 16px}}
+/* lưới ngày × campaign trên điện thoại hẹp: 2 cột sticky 96+60px (trước 124+78) → vùng cột ngày ở giữa còn ~5–7 cột 26px trên 360px (AC-05 · SPEC §6.3) */
+@media(max-width:480px){.hmname{flex-basis:96px;width:96px;padding:0 6px;font-size:9.5px}.hmeval{flex-basis:60px;width:60px;padding:0 4px}
+  .hmhead .hmhcell{font-size:8.5px}.hmev-v{font-size:11px}.hmev-tag{font-size:8.5px}}
 </style>
 </head>
 <body><div class="wrap">
   <div class="nav"><div class="brand">z<span class="o">e</span>n.ag<span class="o">e</span>ncy · Ads</div>
-    <a class="back" href="../" onclick="if(history.length>1){history.back();return false}">← Quay lại</a></div>
+    <a class="back" href="index.html#clients" onclick="if(history.length>1){history.back();return false}">← Quay lại</a></div>
   <h1>📣 Hiệu quả Chiến dịch Ads — <span id="shop">qami</span></h1>
   <div class="sub" id="range">—</div>
   <div id="err">Chưa có <code>ads_data.js</code>/<code>mmm_data.js</code> — chạy <code>python python/ads.py</code> rồi <code>python python/mmm.py</code>.</div>
@@ -206,7 +216,7 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
   </div>
 </div>
 
-<div id="modal" class="modal"><div class="modbox"><button class="modx">✕</button><h3 id="modttl"></h3><div id="modbody"></div></div></div>
+<div id="modal" class="modal"><div class="modbox" role="dialog" aria-modal="true"><div class="modhd"><h3 id="modttl"></h3><button class="modx" aria-label="Đóng">✕</button></div><div id="modbody"></div></div></div>
 
 <script src="ads_data.js"></script>
 <script src="mmm_data.js"></script>
@@ -222,6 +232,9 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
   var esc=s=>(s+'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
   var dd=s=>{var p=(s||'').split('-');return p.length===3?p[2]+'/'+p[1]:s;};
   var roas=(g,s)=>s?+(g/s).toFixed(2):null, per=(x,n)=>n?Math.round(x/n):null;
+  var MOB=()=>window.innerWidth<=800;                     // khớp @media(max-width:800px) của trang này
+  var TIP=o=>Object.assign({confine:true},o||{});          // tooltip luôn nằm gọn trong khung chart (AC-02)
+  var NODATA=t=>'<div style="color:var(--muted);padding:18px 4px;font-size:13px">'+t+'</div>';
 
   var T0=A.totals, mr=T0.margin_rate||0;
   var CAMPS=A.campaigns.map(c=>c.name);
@@ -241,54 +254,76 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
   var infl = (inc!=null&&M.report_roas) ? Math.round((1-inc/M.report_roas)*100) : null;
   var losers = A.campaigns.filter(c=>c.net_roi!=null&&c.net_roi<1);
   var dR=A.decline.recent, dP=A.decline.prior;
-  document.getElementById('vtext').innerHTML =
-    'ROAS TikTok báo <b>'+T0.roas+'</b> nhưng MMM ước lượng <b>incremental ~'+inc+'</b> → ~<b>'+infl+'%</b> là thổi phồng (organic bị nhận công). '+
-    'Dù vậy <b>net-ROI incremental ~'+incNet+'</b> (×biên '+Math.round(mr*100)+'%) → <b>ads VẪN lời ròng</b>. '+
+  document.getElementById('vtext').innerHTML = (inc!=null
+    ? 'ROAS TikTok báo <b>'+T0.roas+'</b> nhưng MMM ước lượng <b>incremental ~'+inc+'</b> → ~<b>'+infl+'%</b> là thổi phồng (organic bị nhận công). '+
+      'Dù vậy <b>net-ROI incremental ~'+incNet+'</b> (×biên '+Math.round(mr*100)+'%) → <b>ads VẪN lời ròng</b>. '
+    : 'ROAS TikTok báo <b>'+T0.roas+'</b> · chưa có <code>mmm_data.js</code> nên chưa tách được phần ads thật vs organic. ')+
     'Ads KHÔNG giảm — 28 ngày: spend '+fM(dP.spend)+'→'+fM(dR.spend)+', đơn '+f(dP.orders)+'→'+f(dR.orders)+', ROAS '+dP.roas+'→'+dR.roas+'. '+
     'Chỗ rò: <b>'+losers.length+'</b> campaign lỗ net.';
   var chips=[
-    {c:'good',l:'Net-ROI thật (incremental)',v:incNet+'x'},
-    {c:infl>30?'warn':'good',l:'Thổi phồng attribution',v:'~'+infl+'%'},
+    {c:incNet==null?'':'good',l:'Net-ROI thật (incremental)',v:incNet==null?'—':incNet+'x'},
+    {c:infl==null?'':(infl>30?'warn':'good'),l:'Thổi phồng attribution',v:infl==null?'—':'~'+infl+'%'},
     {c:'good',l:'Đà 28 ngày',v:'↑ scale'},
     {c:losers.length?'bad':'good',l:'Campaign lỗ net',v:losers.length}
   ];
   document.getElementById('vchips').innerHTML=chips.map(x=>'<div class="vchip '+x.c+'"><b>'+x.v+'</b>'+x.l+'</div>').join('');
 
   /* ---------- MMM (toàn kỳ) ---------- */
+  var inc$=0,base$=0;
   if(M&&inc!=null){
     document.getElementById('incroas').textContent=inc;
     document.getElementById('reproas').textContent=M.report_roas;
     var m0=M.models[0];
     document.getElementById('incexplain').innerHTML='Khoảng tin cậy <b>['+m0.ci_lo+'–'+m0.ci_hi+']</b> · R²='+m0.r2+' · '+M.n_days+' ngày.<br>'+
       'Mỗi 1đ ad tạo ra ~<b>'+inc+'đ doanh thu THÊM</b> (không phải '+M.report_roas+'đ như báo) → ×biên = <b>'+incNet+'đ lãi</b>.';
-    document.getElementById('mmmcaveat').innerHTML='⚠️ '+M.diag.note+' corr(spend,xu hướng)='+M.diag.corr_spend_trend+'.';
-    var inc$=0,base$=0; (M.daily||[]).forEach(d=>{inc$+=d.incremental; base$+=d.baseline;});
-    echarts.init(document.getElementById('chDecomp')).setOption({
-      tooltip:{trigger:'item',formatter:p=>p.name+': '+fM(p.value)+' ('+p.percent+'%)'},
+    document.getElementById('mmmcaveat').innerHTML='⚠️ '+((M.diag&&M.diag.note)||'')+' corr(spend,xu hướng)='+((M.diag&&M.diag.corr_spend_trend!=null)?M.diag.corr_spend_trend:'—')+'.';
+    (M.daily||[]).forEach(d=>{inc$+=d.incremental; base$+=d.baseline;});
+  } else {   // thiếu mmm_data.js → báo rỗng gọn, không vẽ donut trống (SPEC TC-EDGE-02)
+    document.getElementById('incexplain').innerHTML='Chưa có <code>mmm_data.js</code> — chạy <code>python python/mmm.py</code> để tách ROAS thật vs organic.';
+    document.getElementById('mmmcaveat').style.display='none';
+    document.getElementById('chDecomp').innerHTML=NODATA('Chưa có dữ liệu MMM.');
+    document.getElementById('chDecomp').style.height='auto';
+  }
+  function renderDecomp(){   // donut co bán kính + nhãn bám mép trên điện thoại → "Incremental (do ads)" không bị xén (SPEC §6.8)
+    if(!(M&&inc!=null)) return; var m=MOB();
+    ec('chDecomp').setOption({
+      tooltip:TIP({trigger:'item',formatter:p=>p.name+': '+fM(p.value)+' ('+p.percent+'%)'}),
       legend:{bottom:0,textStyle:{color:'#5f584a'}},
-      series:[{type:'pie',radius:['45%','72%'],center:['50%','44%'],
-        label:{formatter:'{b}\n{d}%',color:'#1a1611',fontWeight:600},
+      series:[{type:'pie',radius:m?['34%','54%']:['45%','72%'],center:['50%',m?'42%':'44%'],
+        label:m?{formatter:'{b}\n{d}%',color:'#1a1611',fontWeight:600,fontSize:11,lineHeight:14,alignTo:'edge',edgeDistance:4,overflow:'break'}
+               :{formatter:'{b}\n{d}%',color:'#1a1611',fontWeight:600},
+        labelLine:m?{length:8,length2:6}:{},
         data:[{name:'Incremental (do ads)',value:Math.round(inc$),itemStyle:{color:'#df7a2a'}},
-              {name:'Organic (tự có)',value:Math.round(base$),itemStyle:{color:'#1baf7a'}}]}]});
+              {name:'Organic (tự có)',value:Math.round(base$),itemStyle:{color:'#1baf7a'}}]}]},true);
   }
 
   /* ---------- hour demand + twnote (toàn kỳ) ---------- */
-  if(A.timewin && A.timewin.hour){
-    var tw=A.timewin, hmax=Math.max.apply(null,tw.hour.map(x=>x.orders));
-    echarts.init(document.getElementById('chHour')).setOption({
-      title:{text:'Demand theo giờ · toàn kỳ (số đơn)',left:'center',textStyle:{fontSize:12,color:'#5f584a'}},
-      grid:{left:40,right:16,top:34,bottom:24,containLabel:true},
-      tooltip:{trigger:'axis',formatter:function(p){var h=tw.hour[p[0].dataIndex];return h.hour+'h: '+f(h.orders)+' đơn'+(h.rev!=null?' · '+fM(h.rev):'');}},
-      xAxis:{type:'category',data:tw.hour.map(h=>h.hour),axisLabel:{color:'#938a78',interval:1,formatter:v=>v+'h'}},
-      yAxis:{type:'value',axisLabel:{color:'#938a78'},splitLine:{lineStyle:{color:'#ece4d4'}}},
-      series:[{type:'bar',data:tw.hour.map(h=>({value:h.orders,itemStyle:{color:h.orders>=hmax*0.75?'#df7a2a':'#2a78d6'}}))}]});
+  var tw=(A.timewin&&A.timewin.hour)?A.timewin:null;
+  if(tw){
     var top=tw.hour.slice().sort((a,b)=>b.orders-a.orders).slice(0,3).map(h=>h.hour+'h');
     document.getElementById('twnote').innerHTML='⚠️ GMV Max TỰ pace theo giờ — bảng này để QUAN SÁT + lên lịch cho campaign MANUAL (tầng Learn). '+
       'Giờ demand đỉnh (toàn kỳ): <b>'+top.join(', ')+'</b>. Biểu đồ THỨ bên trái chạy theo bộ lọc.';
+  } else {
+    document.getElementById('chHour').innerHTML=NODATA('Chưa có dữ liệu demand theo giờ (timewin) trong <code>ads_data.js</code>.');
+    document.getElementById('chHour').style.height='auto';
+    document.getElementById('twnote').style.display='none';
+  }
+  function renderHour(){   // đọc không cần hover: in số đơn trên các cột giờ ĐỈNH (≥75% max, tô cam) + ẩn nhãn chồng
+    if(!tw) return; var m=MOB(), hmax=Math.max.apply(null,tw.hour.map(x=>x.orders));
+    ec('chHour').setOption({
+      title:{text:'Demand theo giờ · toàn kỳ (số đơn)',left:'center',textStyle:{fontSize:12,color:'#5f584a'}},
+      grid:{left:m?4:40,right:m?8:16,top:40,bottom:24,containLabel:true},
+      tooltip:TIP({trigger:'axis',formatter:function(p){var h=tw.hour[p[0].dataIndex];return h.hour+'h: '+f(h.orders)+' đơn'+(h.rev!=null?' · '+fM(h.rev):'');}}),
+      xAxis:{type:'category',data:tw.hour.map(h=>h.hour),axisLabel:{color:'#938a78',interval:m?3:1,fontSize:m?10:11,formatter:v=>v+'h'}},
+      yAxis:{type:'value',axisLabel:{color:'#938a78',fontSize:m?10:11},splitLine:{lineStyle:{color:'#ece4d4'}}},
+      labelLayout:{hideOverlap:true},
+      series:[{type:'bar',data:tw.hour.map(h=>({value:h.orders,itemStyle:{color:h.orders>=hmax*0.75?'#df7a2a':'#2a78d6'}})),
+        label:{show:true,position:'top',fontSize:m?8:9,color:'#5f584a',formatter:p=>p.value>=hmax*0.75?f(p.value):''}}]},true);
   }
 
   /* ---------- Phễu & Creative (toàn kỳ, từ creative_data.js) ---------- */
   var CR=window.QAMI_CREATIVE;
+  if(!CR) document.getElementById('crWrap').innerHTML=NODATA('Chưa có <code>creative_data.js</code> — chạy <code>python python/creative.py</code> để mở phễu Hiển thị → Click → Đơn.');
   if(CR){
     var pc=v=>v==null?'—':(v*100).toFixed(1)+'%', beC=mr?1/mr:3.64;
     var ca=CR.campaigns.map(function(c){
@@ -376,38 +411,49 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
   function renderQuad(st){
     var cps=build(st).camps.filter(c=>c.spend>0);
     var smax=Math.max.apply(null,cps.map(c=>c.orders||1).concat([1]));
+    var m=MOB();
     ec('chQuad').setOption({
-      grid:{left:46,right:24,top:18,bottom:42,containLabel:true},
-      tooltip:{formatter:p=>{var c=p.data.o;return '<b>'+esc(c.name)+'</b><br>spend '+fM(c.spend)+'<br>net-ROI '+c.net_roi+'<br>ROAS '+c.roas+'<br>đơn '+f(c.orders);}},
-      xAxis:{name:'Spend',type:'value',axisLabel:{formatter:v=>fM(v),color:'#938a78'},splitLine:{lineStyle:{color:'#ece4d4'}}},
-      yAxis:{name:'Net-ROI',type:'value',axisLabel:{color:'#938a78'},splitLine:{lineStyle:{color:'#ece4d4'}}},
-      series:[{type:'scatter',data:cps.map(c=>({value:[c.spend,c.net_roi||0],o:c,
+      grid:{left:m?4:46,right:m?16:24,top:30,bottom:42,containLabel:true},
+      tooltip:TIP({formatter:p=>{var c=p.data.o;return '<b>'+esc(c.name)+'</b><br>spend '+fM(c.spend)+'<br>net-ROI '+c.net_roi+'<br>ROAS '+c.roas+'<br>đơn '+f(c.orders);}}),
+      xAxis:{name:'Spend',type:'value',min:0,boundaryGap:[0,'10%'],splitNumber:m?3:5,axisLabel:{formatter:v=>m?(v>=1e6?Math.round(v/1e6)+'tr':v>=1e3?Math.round(v/1e3)+'k':v):fM(v),color:'#938a78',fontSize:m?10:11,hideOverlap:true},splitLine:{lineStyle:{color:'#ece4d4'}}},
+      yAxis:{name:'Net-ROI',type:'value',boundaryGap:['8%','14%'],axisLabel:{color:'#938a78',fontSize:m?10:11},splitLine:{lineStyle:{color:'#ece4d4'}}},
+      labelLayout:{hideOverlap:true},
+      series:[{type:'scatter',
+        label:{show:true,position:'top',fontSize:m?9:10,color:'#5f584a',formatter:p=>{var v=p.data.o.net_roi;return v==null?'':(+v).toFixed(2)+'x';}},
+        data:cps.map(c=>({value:[c.spend,c.net_roi||0],o:c,
           symbolSize:10+Math.sqrt((c.orders||1)/smax)*34,
           itemStyle:{color:(c.net_roi!=null&&c.net_roi<1)?'#cf3b3b':'#2a78d6',opacity:.72,borderColor:'#fff'}})),
         markLine:{silent:true,symbol:'none',lineStyle:{color:'#cf3b3b',type:'dashed'},
-          data:[{yAxis:1,label:{formatter:'hoà vốn',color:'#cf3b3b'}}]}}]},true);
+          data:[{yAxis:1,label:{formatter:'hoà vốn',color:'#cf3b3b',position:'insideStartTop'}}]}}]},true);
   }
   function renderTrend(st){
     var dl=build(st).daily;
+    var m=MOB(), W=((document.getElementById('chTrend').clientWidth)||500)-100, stp=Math.max(1,Math.ceil(30/(W/Math.max(1,dl.length))));
     ec('chTrend').setOption({
-      grid:{left:50,right:50,top:18,bottom:30,containLabel:true},
-      tooltip:{trigger:'axis'},
-      xAxis:{type:'category',data:dl.map(d=>d.date.slice(5)),axisLabel:{color:'#938a78',interval:Math.ceil((dl.length||1)/10)}},
-      yAxis:[{type:'value',name:'Spend',axisLabel:{formatter:v=>fM(v),color:'#938a78'},splitLine:{lineStyle:{color:'#ece4d4'}}},
-             {type:'value',name:'ROAS',axisLabel:{color:'#938a78'},splitLine:{show:false}}],
+      grid:{left:m?4:50,right:m?4:50,top:32,bottom:30,containLabel:true},
+      tooltip:TIP({trigger:'axis'}),
+      labelLayout:{hideOverlap:true},
+      xAxis:{type:'category',data:dl.map(d=>d.date.slice(5)),axisLabel:{color:'#938a78',fontSize:m?10:11,interval:Math.ceil((dl.length||1)/(m?5:10))}},
+      yAxis:[{type:'value',name:'Spend',axisLabel:{formatter:v=>fM(v),color:'#938a78',fontSize:m?10:11},splitLine:{lineStyle:{color:'#ece4d4'}}},
+             {type:'value',name:'ROAS',axisLabel:{color:'#938a78',fontSize:m?10:11},splitLine:{show:false}}],
       series:[{name:'Spend',type:'bar',data:dl.map(d=>d.spend),itemStyle:{color:'#cdb98f'}},
-              {name:'ROAS',type:'line',yAxisIndex:1,data:dl.map(d=>d.roas),smooth:true,symbol:'none',lineStyle:{color:'#df7a2a',width:2}}]},true);
+              {name:'ROAS',type:'line',yAxisIndex:1,data:dl.map(d=>d.roas),smooth:true,symbol:'circle',symbolSize:3,z:5,lineStyle:{color:'#df7a2a',width:2},itemStyle:{color:'#df7a2a'},
+               label:{show:true,position:'top',fontSize:9,fontWeight:700,color:'#b85d14',formatter:p=>(p.dataIndex%stp===0&&p.value!=null)?(+p.value).toFixed(1):''}}]},true);
   }
   function renderDow(st){
     var DW=['T2','T3','T4','T5','T6','T7','CN'], dw=build(st).dow;
+    var m=MOB();
     ec('chDow').setOption({
       title:{text:'ROAS theo thứ (cột = số đơn)',left:'center',textStyle:{fontSize:12,color:'#5f584a'}},
-      grid:{left:40,right:40,top:34,bottom:24,containLabel:true},tooltip:{trigger:'axis'},
+      grid:{left:m?4:40,right:m?4:40,top:52,bottom:24,containLabel:true},tooltip:TIP({trigger:'axis'}),
+      labelLayout:{hideOverlap:true},
       xAxis:{type:'category',data:dw.map(d=>DW[d.dow]),axisLabel:{color:'#938a78'}},
-      yAxis:[{type:'value',name:'ROAS',axisLabel:{color:'#938a78'},splitLine:{lineStyle:{color:'#ece4d4'}}},
-             {type:'value',name:'Đơn',axisLabel:{color:'#938a78'},splitLine:{show:false}}],
-      series:[{name:'Đơn',type:'bar',yAxisIndex:1,data:dw.map(d=>d.orders),itemStyle:{color:'#cdb98f'}},
-              {name:'ROAS',type:'line',data:dw.map(d=>d.roas),smooth:true,symbol:'circle',symbolSize:7,lineStyle:{color:'#df7a2a',width:2.5},itemStyle:{color:'#df7a2a'}}]},true);
+      yAxis:[{type:'value',name:'ROAS',boundaryGap:[0,'12%'],axisLabel:{color:'#938a78',fontSize:m?10:11},splitLine:{lineStyle:{color:'#ece4d4'}}},
+             {type:'value',name:'Đơn',axisLabel:{color:'#938a78',fontSize:m?10:11},splitLine:{show:false}}],
+      series:[{name:'Đơn',type:'bar',yAxisIndex:1,data:dw.map(d=>d.orders),itemStyle:{color:'#cdb98f'},
+               label:{show:true,position:'insideBottom',fontSize:9,color:'#5f584a',formatter:p=>p.value?f(p.value):''}},
+              {name:'ROAS',type:'line',data:dw.map(d=>d.roas),smooth:true,symbol:'circle',symbolSize:7,z:5,lineStyle:{color:'#df7a2a',width:2.5},itemStyle:{color:'#df7a2a'},
+               label:{show:true,position:'top',fontSize:10,fontWeight:700,color:'#b85d14',formatter:p=>p.value==null?'':(+p.value).toFixed(2)}}]},true);
   }
   function renderGantt(st){   // cột đa-chỉ-số/ngày × campaign + điểm hiệu quả tổng hợp (HTML · id chGantt · key 'gantt')
     var el=document.getElementById('chGantt'); el.style.height='auto';
@@ -641,7 +687,16 @@ footer{color:var(--muted);font-size:12px;margin-top:10px}
   document.getElementById('chGantt').addEventListener('click',function(e){ var ev=e.target.closest('.hmeval[data-sc]'); if(ev) openModal('Điểm hiệu quả · '+ev.getAttribute('data-nm'), scoreBreakdown(ev.dataset)); });
   (function(){ var md=document.getElementById('modal'); md.addEventListener('click',function(e){ if(e.target===md||e.target.closest('.modx')) closeModal(); }); document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeModal(); }); })();
 
+  renderDecomp(); renderHour();   // 2 chart toàn kỳ — nay lưu trong EC nên co giãn được
   applyGlobal();  // initial render (toàn kỳ)
+  // Đổi BỀ RỘNG (kéo cửa sổ, xoay màn hình) → resize() MỌI chart + vẽ lại option phụ thuộc MOB()/bề rộng.
+  // Trước đây trang KHÔNG có listener resize, chDecomp/chHour còn không lưu vào EC → chart giữ kích thước cũ.
+  var rzT, rzW=window.innerWidth;
+  window.addEventListener('resize',function(){ clearTimeout(rzT); rzT=setTimeout(function(){
+    Object.keys(EC).forEach(function(k){ EC[k].resize(); });
+    if(window.innerWidth===rzW) return; rzW=window.innerWidth;     // chỉ đổi chiều cao (thanh địa chỉ mobile) → thôi
+    renderDecomp(); renderHour(); renderQuad(L.quad); renderTrend(L.trend); renderDow(L.dow);
+  },150); });
 
   document.getElementById('foot').innerHTML='Nguồn: ads_data.js (Product campaign data) + mmm_data.js · biên đóng góp '+Math.round(mr*100)+'% (COGS, trừ ads) · '+
     'MMM & demand-giờ chạy TOÀN KỲ (model cần cả chuỗi để ước lượng đúng). zen.agency nội bộ.';

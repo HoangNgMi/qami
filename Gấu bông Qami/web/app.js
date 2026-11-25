@@ -7,7 +7,10 @@ const CFG = window.CFG || {};
 const T = CFG.T;                 // palette & màu chrome (ở config.js)
 const COSTL = CFG.COSTL;         // nhãn 4 nhóm chi phí
 
-const DATA = window.QAMI_DATA;
+// Thiếu data.js → KHÔNG sập trang (SPEC rà soát UI §6.12): dữ liệu rỗng + tab Tổng quan báo rỗng (mountNoData)
+const NO_DATA = !(window.QAMI_DATA && window.QAMI_DATA.date);
+const DATA = NO_DATA ? {date:[],rev:[],cogs:[],plat:[],koc:[],ads:[],other:[],ch:[],set:[],prod:[],channels:[],settles:[],products:[]}
+                     : window.QAMI_DATA;
 const META = window.QAMI_META || {};
 const VID = window.QAMI_VIDEO || null;     // nguồn Video/KOC (file riêng video_data.js)
 const DATES = [...new Set(DATA.date.filter(Boolean))].sort();   // ngày duy nhất, tăng dần
@@ -33,10 +36,36 @@ function fV(n){ n=+n||0; const s=n<0?"-":""; const a=Math.abs(n);
   if(a>=1e6) return s+(a/1e6).toFixed(1)+" tr";
   if(a>=1e3) return s+Math.round(a/1e3)+"k"; return s+Math.round(a); }
 function fF(n){ return Math.round(+n||0).toLocaleString("vi-VN"); }
+// nhãn TRỤC tiền gọn ("10tr", "1.2tỷ", "500k") — trục nằm ngang trên điện thoại không còn "10.0 tr20.0 tr" dính nhau
+function fAx(n){ n=+n||0; const s=n<0?"-":"", a=Math.abs(n), d=x=>x<10&&x%1?x.toFixed(1):Math.round(x);
+  if(a>=1e9) return s+d(a/1e9)+"tỷ"; if(a>=1e6) return s+d(a/1e6)+"tr"; if(a>=1e3) return s+Math.round(a/1e3)+"k"; return s+Math.round(a); }
 function tip(x){ return Object.assign({backgroundColor:T.surface,borderColor:T.grid,
   textStyle:{color:T.ink},confine:true}, x||{}); }
 function axc(){ return {color:T.muted,fontSize:MOB()?10:11}; }
 function sl(){ return {lineStyle:{color:T.grid}}; }
+
+/* [ZONE W0b · Bố cục chart đọc được trên laptop + điện thoại]  (SPEC rà soát UI 2026-11-25 · AC-02/03)
+   lgTop  : legend ở ĐẦU chart + đo số DÒNG legend thật theo bề rộng khung → trả grid.top đủ chỗ
+            (legend rớt 2–3 dòng trên mobile KHÔNG đè cột/đường/nhãn số). o.lbl = có nhãn số trên đỉnh · o.name = trục Y có tên.
+   pieFit : donut co bán kính + nhãn bám mép khung trên mobile (không xén mép trái/phải).
+   catLbl : nhãn trục danh mục tự xuống dòng theo bề rộng mỗi cột (không đè nhau). */
+const _cv=document.createElement("canvas").getContext("2d");
+function lgTop(id,names,o){ o=o||{};
+  const m=MOB(), fs=m?11:12, iw=m?16:22, ih=m?10:12, gap=m?8:10;
+  const W=Math.max(120,((el(id)&&el(id).clientWidth)||320)-10);
+  _cv.font=fs+"px system-ui,-apple-system,'Segoe UI',sans-serif";
+  let rows=1,x=0;
+  names.forEach(n=>{ const w=iw+5+_cv.measureText(String(n)).width; if(x>0 && x+w>W){ rows++; x=0; } x+=w+gap; });
+  const rowH=Math.max(ih,fs+4);
+  return {rows, legend:{top:0,left:"center",itemWidth:iw,itemHeight:ih,itemGap:gap,textStyle:{color:T.ink2,fontSize:fs}},
+          top:10+rows*rowH+(rows-1)*gap+(o.lbl?18:8)+(o.name?14:0)}; }
+function pieFit(fmt){ const m=MOB();
+  return m ? {radius:["34%","54%"],center:["50%","43%"],
+              label:{color:T.ink,formatter:fmt,fontSize:10,lineHeight:12,alignTo:"edge",edgeDistance:4,minMargin:3,overflow:"break"},
+              labelLine:{length:8,length2:6}}
+           : {radius:["46%","70%"],center:["50%","45%"],label:{color:T.ink,formatter:fmt,fontSize:12},labelLine:{}}; }
+function catLbl(id,n){ const W=((el(id)&&el(id).clientWidth)||320)-70;
+  return Object.assign(axc(),{interval:0,width:Math.max(36,Math.floor(W/Math.max(1,n))-6),overflow:"break",lineHeight:MOB()?11:13}); }
 
 /* ---------- HOME: chart mẫu (quảng cáo, data giả) ---------- */
 function renderHome(){
@@ -50,13 +79,12 @@ function renderHome(){
       areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[
         {offset:0,color:"rgba(223,122,42,.26)"},{offset:1,color:"rgba(223,122,42,0)"}])}}]
   });
+  const pf=pieFit("{b} {d}%");
   gc("hc2").setOption({
     tooltip:tip({trigger:"item"}), legend:{bottom:0,textStyle:{color:T.ink2}}, color:T.cost,
-    series:[{type:"pie",radius:["48%","72%"],center:["50%","44%"],
-      itemStyle:{borderColor:T.surface,borderWidth:3},
-      label:{color:T.ink,formatter:"{b} {d}%"},
-      data:[{name:"COGS",value:58},{name:"Platform",value:18},{name:"Ads",value:14},{name:"KOC",value:10}]}]
-  });
+    series:[Object.assign({type:"pie",itemStyle:{borderColor:T.surface,borderWidth:3},
+      data:[{name:"COGS",value:58},{name:"Platform",value:18},{name:"Ads",value:14},{name:"KOC",value:10}]},pf)]
+  }, true);
 }
 
 /* [ZONE W0 · Khử độc đầu vào — Untrusted Boundary]  Status: LOCKED
@@ -142,14 +170,12 @@ function drawDonut(){
   badge("ovCost",A, f.cmp?prevOf(f):null);
   gc("ovCost").setOption({
     tooltip:tip({trigger:"item",valueFormatter:v=>fF(v)+" đ"}),
-    legend:{bottom:0,textStyle:{color:T.ink2}}, color:T.cost,
-    series:[{type:"pie",radius:MOB()?["40%","62%"]:["46%","70%"],
-      center:MOB()?["44%","46%"]:["50%","45%"], avoidLabelOverlap:true,
+    legend:{bottom:0,textStyle:{color:T.ink2,fontSize:MOB()?11:12},itemGap:MOB()?8:10}, color:T.cost,
+    series:[Object.assign({type:"pie",avoidLabelOverlap:true,
       itemStyle:{borderColor:T.surface,borderWidth:2},
-      label:{color:T.ink,formatter:"{b}\n{d}%",fontSize:MOB()?10:12},
       // COSTL = [COGS, Platform, Ads, KOC, Phụ trội] ↔ g.c, g.p, g.a(=ads), g.k(=koc), g.o
       // (2026-11-25 sửa: trước đây truyền [c,p,k,a] → nhãn Ads hiện số KOC và ngược lại)
-      data:COSTL.map((n,i)=>({name:n,value:[t.c,t.p,t.a,t.k,t.o][i]}))}]
+      data:COSTL.map((n,i)=>({name:n,value:[t.c,t.p,t.a,t.k,t.o][i]}))}, pieFit("{b}\n{d}%"))]
   }, true);
 }
 function rOverview(){   // KPI + ghi chú luôn theo filter TỔNG
@@ -178,7 +204,8 @@ function renderNote(A){
   _noteA=A;
   if(el("noteEditWrap") && el("noteEditWrap").style.display==="block") return; // đang sửa thì giữ nguyên
   const custom=(localStorage.getItem(NOTE_KEY)||"").trim();
-  el("noteBody").innerHTML = custom ? custom.replace(/\n/g,"<br>") : autoNote(A);
+  // ghi chú tự gõ = chữ THUẦN → khử độc qua esc() [ZONE W0] rồi mới đổi xuống dòng (SPEC §6.14)
+  el("noteBody").innerHTML = custom ? esc(custom).replace(/\n/g,"<br>") : autoNote(A);
 }
 
 /* [ZONE W4 · Sản phẩm: bubble + bar lời/lỗ]  Status: LOCKED */
@@ -189,14 +216,16 @@ function drawBubble(){
   const top=rows.filter(r=>r.roi!=null).sort((a,b)=>b.rev-a.rev).slice(0,MOB()?12:22);
   const col=r=> r.roi<1?T.crit : r.roi<1.15?T.cost[3] : T.good;
   const smax=Math.max(1,...top.map(r=>r.orders));
-  const rois=top.map(r=>r.roi), rmin=Math.min(1,...rois), rmax=Math.max(...rois);  // giãn trục: bỏ vùng trống dưới min
+  const rois=top.map(r=>r.roi), rmin=Math.min(1,...rois), rmax=Math.max(1,...rois);  // giãn trục: bỏ vùng trống dưới min
+  const pad=Math.max(0.05,(rmax-rmin)*0.12);   // chừa lề trên/dưới để bong bóng to + nhãn ở biên không bị cắt
+  const ylo=Math.floor((rmin-pad)*20)/20, yhi=Math.ceil((rmax+pad)*20)/20;   // làm tròn bước 0.05 → không có mốc lẻ dính nhau (1.30x/1.32x)
   gc("prodBubble").setOption({
     tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;
       return `<b>${esc(r.name)}</b><br>Doanh thu ${fF(r.rev)}đ<br>Net ROI ${r.roi.toFixed(2)}x<br>Số đơn ${r.orders}`;}}),
-    grid:{left:48,right:26,top:16,bottom:28,containLabel:true},
-    xAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
-    yAxis:{type:"value",min:+(rmin-0.05).toFixed(2),max:+(rmax+0.05).toFixed(2),
-      axisLabel:{color:T.muted,formatter:v=>v.toFixed(2)+"x",fontSize:MOB()?10:11},splitLine:sl()},
+    grid:{left:MOB()?8:48,right:MOB()?18:26,top:22,bottom:28,containLabel:true},
+    xAxis:{type:"value",min:0,boundaryGap:[0,"10%"],splitNumber:MOB()?3:5,axisLabel:{color:T.muted,formatter:fAx,fontSize:MOB()?10:11,hideOverlap:true},splitLine:sl()},
+    yAxis:{type:"value",min:+ylo.toFixed(2),max:+yhi.toFixed(2),
+      axisLabel:{color:T.muted,formatter:v=>v.toFixed(2)+"x",fontSize:MOB()?10:11,hideOverlap:true},splitLine:sl()},
     series:[{type:"scatter",data:top.map(r=>({value:[r.rev,r.roi],o:r,
         symbolSize:13+Math.sqrt(r.orders/smax)*(MOB()?26:36),
         itemStyle:{color:col(r),opacity:.82,borderColor:T.surface,borderWidth:1.5},
@@ -211,15 +240,18 @@ function drawProdBar(){
   const rows=Object.keys(A.bp).map(n=>{const g=A.bp[n],x=ac(g);
     return {name:n,rev:g.r,orders:g.n,roi:x>0?g.r/x:null,margin:g.r-x};});
   const bar=rows.sort((a,b)=>b.rev-a.rev).slice(0,MOB()?8:12).reverse();
+  const NL=MOB()?14:24;   // tên SP: điện thoại cắt 14 ký tự để vùng vẽ thanh không bị bóp (SPEC §6.10)
   gc("prodBar").setOption({
-    tooltip:tip({trigger:"item",valueFormatter:v=>fF(v)+" đ"}),
-    grid:{left:8,right:54,top:14,bottom:22,containLabel:true},
-    xAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
-    yAxis:{type:"category",data:bar.map(r=>r.name.length>24?r.name.slice(0,24)+"…":r.name),
-      axisLabel:{color:T.ink2,fontSize:MOB()?10:11},axisLine:{lineStyle:{color:T.axis}}},
+    tooltip:tip({trigger:"item",formatter:p=>`<b>${esc(bar[p.dataIndex].name)}</b><br>Lời/lỗ ${fF(p.value)} đ`}),
+    grid:{left:8,right:MOB()?50:58,top:14,bottom:22,containLabel:true},
+    xAxis:{type:"value",splitNumber:MOB()?3:5,axisLabel:{color:T.muted,formatter:fAx,fontSize:MOB()?10:11,hideOverlap:true},splitLine:sl()},
+    // onZero:false → trục tên SP nằm ở MÉP TRÁI, không chạy qua vạch 0 đè lên thanh LỖ (âm)
+    yAxis:{type:"category",data:bar.map(r=>r.name.length>NL?r.name.slice(0,NL)+"…":r.name),
+      axisLabel:{color:T.ink2,fontSize:MOB()?10:11},axisLine:{onZero:false,lineStyle:{color:T.axis}},axisTick:{show:false}},
     series:[{type:"bar",data:bar.map(r=>({value:r.margin,
-        itemStyle:{color:r.margin>=0?T.good:T.crit,borderRadius:[0,5,5,0]}})),
-      label:{show:true,position:"right",color:T.ink2,fontSize:11,formatter:p=>fV(p.value)}}]
+        itemStyle:{color:r.margin>=0?T.good:T.crit,borderRadius:r.margin>=0?[0,5,5,0]:[5,0,0,5]}})),
+      // nhãn "right": thanh dương = sau đầu thanh · thanh âm = bên phải vạch 0 (vùng trống) → không đè trục/thanh
+      label:{show:true,position:"right",color:T.ink2,fontSize:MOB()?10:11,formatter:p=>fV(p.value)}}]
   }, true);
 }
 
@@ -230,12 +262,16 @@ function drawChROI(){
   nm.forEach(n=>{const g=A.bc[n],x=ac(g);
     net.push(x>0?+(g.r/x).toFixed(2):0); roas.push(g.a>0?+(g.r/g.a).toFixed(2):0);
     gross.push(g.c>0?+(g.r/g.c).toFixed(2):0);});
-  const lbl={show:true,position:"top",color:T.ink2,fontSize:MOB()?9:11,formatter:p=>p.value?p.value.toFixed(2)+"x":""};
+  // 3 cột sát nhau/kênh: điện thoại xoay nhãn 90° (mỗi nhãn nằm gọn trong bề ngang cột) + ẩn nhãn chồng (SPEC §6.11)
+  const lbl=Object.assign({show:true,position:"top",color:T.ink2,fontSize:MOB()?9:11,formatter:p=>p.value?p.value.toFixed(2)+"x":""},
+    MOB()?{rotate:90,align:"left",verticalAlign:"middle",distance:4}:{});
+  const lg=lgTop("chROI",["Net ROI","ROAS","Gross ROI"],{lbl:true,name:true});
   gc("chROI").setOption({
     tooltip:tip({trigger:"axis",axisPointer:{type:"shadow"},valueFormatter:v=>(+v).toFixed(2)+"x"}),
-    legend:{top:0,textStyle:{color:T.ink2}}, grid:{left:40,right:16,top:34,bottom:28,containLabel:true}, color:T.roi,
-    xAxis:{type:"category",data:nm,axisLabel:axc(),axisLine:{lineStyle:{color:T.axis}}},
-    yAxis:{type:"value",name:"ROI (x)",nameTextStyle:{color:T.muted},axisLabel:axc(),splitLine:sl()},
+    legend:lg.legend, grid:{left:MOB()?6:40,right:16,top:lg.top,bottom:28,containLabel:true}, color:T.roi,
+    labelLayout:{hideOverlap:true},
+    xAxis:{type:"category",data:nm,axisLabel:catLbl("chROI",nm.length),axisLine:{lineStyle:{color:T.axis}}},
+    yAxis:{type:"value",name:"ROI (x)",nameTextStyle:{color:T.muted},boundaryGap:[0,MOB()?"30%":"12%"],axisLabel:axc(),splitLine:sl()},
     series:[{name:"Net ROI",type:"bar",data:net,label:lbl,itemStyle:{borderRadius:[4,4,0,0]}},
       {name:"ROAS",type:"bar",data:roas,label:lbl,itemStyle:{borderRadius:[4,4,0,0]}},
       {name:"Gross ROI",type:"bar",data:gross,label:lbl,itemStyle:{borderRadius:[4,4,0,0]}}]
@@ -244,15 +280,18 @@ function drawChROI(){
 function drawChCost(){
   const f=F("chCost"), A=compute(f); badge("chCost",A,f.cmp?prevOf(f):null);
   const nm=Object.keys(A.bc);
-  const keys=["c","p","a","k"];   // khớp COSTL [COGS,Platform,Ads,KOC] (trước 2026-11-25 tráo k/a)
+  // khớp COSTL [COGS,Platform,Ads,KOC,Phí sàn phụ trội] ↔ g.c,g.p,g.a,g.k,g.o (trước 2026-11-25 tráo k/a).
+  // SPEC §6.6: trước đây keys chỉ 4 mục → series thứ 5 (Phí sàn phụ trội) = g[undefined] = NaN mà legend vẫn hiện 5 mục.
+  const keys=["c","p","a","k","o"];
   const series=COSTL.map((nm2,ix)=>({name:nm2,type:"bar",stack:"x",color:T.cost[ix],
     itemStyle:{borderColor:T.surface,borderWidth:1},
     label:{show:true,color:"#fff",fontSize:MOB()?9:10,formatter:p=>p.value>=7?Math.round(p.value)+"%":""},
-    data:nm.map(n=>{const g=A.bc[n];return g.r>0?+(g[keys[ix]]/g.r*100).toFixed(1):0;})}));
+    data:nm.map(n=>{const g=A.bc[n];return g.r>0?+(((g[keys[ix]])||0)/g.r*100).toFixed(1):0;})}));
+  const lg=lgTop("chCost",COSTL,{name:true});
   gc("chCost").setOption({
     tooltip:tip({trigger:"axis",axisPointer:{type:"shadow"},valueFormatter:v=>(+v).toFixed(1)+"%"}),
-    legend:{top:0,textStyle:{color:T.ink2}}, grid:{left:40,right:16,top:34,bottom:28,containLabel:true},
-    xAxis:{type:"category",data:nm,axisLabel:axc(),axisLine:{lineStyle:{color:T.axis}}},
+    legend:lg.legend, grid:{left:MOB()?6:40,right:16,top:lg.top,bottom:28,containLabel:true},
+    xAxis:{type:"category",data:nm,axisLabel:catLbl("chCost",nm.length),axisLine:{lineStyle:{color:T.axis}}},
     yAxis:{type:"value",name:"% doanh thu",nameTextStyle:{color:T.muted},
       axisLabel:{color:T.muted,formatter:"{value}%",fontSize:MOB()?10:11},splitLine:sl()}, series
   }, true);
@@ -264,7 +303,10 @@ function drawMoney(){
   badge("tlMoney",A,pA);
   const dts=Object.keys(A.bd).sort(), g=d=>A.bd[d];
   const rev=dts.map(d=>g(d).r), mar=dts.map(d=>{const x=g(d);return x.r-ac(x);});
-  const STEP=Math.max(1,Math.ceil(dts.length/12)), everyDay=dts.length<=45;
+  // nhãn số DT: bước nhãn theo BỀ RỘNG THẬT của chart (mỗi nhãn cần ~28px) thay vì "≤45 ngày = mọi ngày"
+  // → điện thoại 25–31 ngày không còn 31 nhãn dính chùm trên ~290px (SPEC §6.4) · thêm hideOverlap chặn chồng còn sót
+  const pxDay=Math.max(1,(((el("tlMoney")&&el("tlMoney").clientWidth)||600)-70)/Math.max(1,dts.length));
+  const STEP=Math.max(1,Math.ceil(28/pxDay)), everyDay=STEP===1;
   const avgR=rev.length?rev.reduce((s,x)=>s+x,0)/rev.length:0;
   if(el("tlAvg")) el("tlAvg").textContent=" · TB/ngày: "+fV(avgR);
   const costS=[["c","COGS"],["p","Platform"],["a","Ads"],["k","KOC"],["o","Phí sàn phụ trội"]].map((kk,ix)=>({   // g.a=Ads, g.k=KOC (sửa tráo 2026-11-25)
@@ -279,9 +321,10 @@ function drawMoney(){
   if(pA){ const pv=Object.keys(pA.bd).sort().map(d=>pA.bd[d].r);
     series.push({name:"DT kỳ trước",type:"line",smooth:true,symbol:"none",z:4,data:dts.map((_,i)=>pv[i]!=null?pv[i]:null),
       lineStyle:{color:T.muted,width:1.5,type:"dashed"},itemStyle:{color:T.muted}}); }
+  const lg=lgTop("tlMoney",series.map(s=>s.name),{lbl:true});   // 7–8 mục legend: chừa đủ số dòng thật → không đè plot
   gc("tlMoney").setOption({
     tooltip:tip({trigger:"axis",valueFormatter:v=>fF(v)+" đ"}),
-    legend:{top:0,textStyle:{color:T.ink2}}, grid:{left:48,right:18,top:34,bottom:28,containLabel:true},
+    legend:lg.legend, grid:{left:MOB()?6:48,right:18,top:lg.top,bottom:28,containLabel:true}, labelLayout:{hideOverlap:true},
     xAxis:{type:"category",data:dts,axisLabel:axc(),axisLine:{lineStyle:{color:T.axis}}},
     yAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
     series
@@ -305,10 +348,11 @@ function drawOrders(){
   if(pA){ const pv=Object.keys(pA.bd).sort().map(d=>pA.bd[d].n);
     series.push({name:"Kỳ trước",type:"line",smooth:true,symbol:"none",z:4,data:dts.map((_,i)=>pv[i]!=null?pv[i]:null),
       lineStyle:{color:T.muted,width:1.5,type:"dashed"},itemStyle:{color:T.muted}}); }
+  const lg=pA?lgTop("tlOrders",["Số đơn","Kỳ trước"],{lbl:true,name:true}):null;
   gc("tlOrders").setOption({
     tooltip:tip({trigger:"axis",axisPointer:{type:"shadow"}}),
-    legend: pA?{top:0,textStyle:{color:T.ink2}}:undefined,
-    grid:{left:44,right:18,top:pA?30:22,bottom:28,containLabel:true},
+    legend: lg?lg.legend:undefined,
+    grid:{left:MOB()?6:44,right:18,top:lg?lg.top:36,bottom:28,containLabel:true},
     xAxis:{type:"category",data:dts,axisLabel:axc(),axisLine:{lineStyle:{color:T.axis}}},
     yAxis:{type:"value",name:"Số đơn",nameTextStyle:{color:T.muted},axisLabel:axc(),splitLine:sl()},
     series
@@ -327,6 +371,9 @@ function inR(d,r){ return !r || (!!d && d>=r[0] && d<=r[1]); }
 function renderVideo(){
   const V=VID, empty=el("vEmpty"), has=V && V.koc && V.koc.length;
   if(empty) empty.style.display=has?"none":"block";
+  // thiếu video_data.js: ẩn luôn 2 thẻ bảng + thanh ⓘ KPI (khỏi để khung rỗng) → chỉ còn thẻ #vEmpty (SPEC TC-EDGE-02)
+  ["vHeat","vTable"].forEach(id=>{ const c=el(id)&&el(id).closest(".card"); if(c) c.style.display=has?"":"none"; });
+  if(el("qkb-vkpi")) el("qkb-vkpi").style.display=has?"":"none";
   if(!has){ el("vkpis").innerHTML=""; return; }
   drawVKpis(V); drawVHeat(V); drawVTable(V);
 }
@@ -380,38 +427,7 @@ function drawVHeat(V){
   host.innerHTML=out;
   const mb=el("vMore"); if(mb) mb.onclick=()=>{ vExpand=!vExpand; drawVHeat(V); };
 }
-function drawVKocRev(V){ const rows=[...V.kocRank].sort((a,b)=>a.gmv-b.gmv);
-  gc("vKocRev").setOption({
-    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${esc(r.name)}</b><br>GMV ${fF(r.gmv)}đ<br>${r.videos} video · ${fF(r.sold)} món<br>Hoa hồng ~${fF(r.comm)}đ`;}}),
-    grid:{left:8,right:60,top:10,bottom:22,containLabel:true},
-    xAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
-    yAxis:{type:"category",data:rows.map(r=>r.name.length>18?r.name.slice(0,18)+"…":r.name),axisLabel:{color:T.ink2,fontSize:MOB()?10:11},axisLine:{lineStyle:{color:T.axis}}},
-    series:[{type:"bar",data:rows.map(r=>({value:r.gmv,o:r,itemStyle:{color:T.violet,borderRadius:[0,5,5,0]}})),
-      label:{show:true,position:"right",color:T.ink2,fontSize:11,formatter:p=>fV(p.value)}}]
-  },true);
-}
-function drawVKocEff(V){ const rows=[...V.kocRank].sort((a,b)=>a.gpv-b.gpv);
-  gc("vKocEff").setOption({
-    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${esc(r.name)}</b><br>GMV/video ${fF(r.gpv)}đ<br>${r.videos} video`;}}),
-    grid:{left:8,right:60,top:10,bottom:22,containLabel:true},
-    xAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
-    yAxis:{type:"category",data:rows.map(r=>r.name.length>18?r.name.slice(0,18)+"…":r.name),axisLabel:{color:T.ink2,fontSize:MOB()?10:11},axisLine:{lineStyle:{color:T.axis}}},
-    series:[{type:"bar",data:rows.map(r=>({value:r.gpv,o:r,itemStyle:{color:T.orange,borderRadius:[0,5,5,0]}})),
-      label:{show:true,position:"right",color:T.ink2,fontSize:11,formatter:p=>fV(p.value)}}]
-  },true);
-}
-function drawVFunnel(V){ const pts=V.videos.filter(v=>v.ctr!=null),gmax=Math.max(1,...pts.map(v=>v.gmv));
-  gc("vFunnel").setOption({
-    tooltip:tip({trigger:"item",formatter:p=>{const r=p.data.o;return `<b>${esc(r.user)}</b><br>CTR ${r.ctr}%<br>Bán ${fF(r.sold)} món<br>GMV ${fF(r.gmv)}đ<br>Xem hết ${r.comp!=null?r.comp+'%':'—'}`;}}),
-    grid:{left:46,right:20,top:16,bottom:38,containLabel:true},
-    xAxis:{type:"value",name:"CTR (%)",nameLocation:"middle",nameGap:24,nameTextStyle:{color:T.muted},axisLabel:{color:T.muted,formatter:"{value}%",fontSize:MOB()?10:11},splitLine:sl()},
-    yAxis:{type:"value",name:"Số món bán",nameTextStyle:{color:T.muted},axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
-    series:[{type:"scatter",data:pts.map(r=>({value:[r.ctr,r.sold],o:r,
-        symbolSize:8+Math.sqrt(r.gmv/gmax)*(MOB()?22:34),
-        itemStyle:{color:T.good,opacity:.62,borderColor:T.surface,borderWidth:1}})),
-      labelLayout:{hideOverlap:true}}]
-  },true);
-}
+/* (2026-11-25 · SPEC §6.12) đã gỡ drawVKocRev / drawVKocEff / drawVFunnel — không có thẻ HTML đích, không được gọi. */
 
 /* [ZONE W9 · Bảng Video ROI (xếp hạng GMV↓ rồi Doanh thu gộp↓)]  Status: DRAFT */
 let vtExpand=false;
@@ -528,6 +544,9 @@ function drawRtKpis(){ const host=el("rtkpis"); if(!host||!RET) return;
   host.innerHTML=K.map(k=>`<div class="kpi"><div class="l">${k.l}</div><div class="v ${k.vc||""}">${k.v}</div><div class="s">${k.s}</div>${k.x||""}</div>`).join("");
 }
 function drawRtWater(){ const m=rtMoney(vRange(F("rtWater"))), G0=m.G||1;
+  // khung HẸP (điện thoại): waterfall NẰM NGANG — tên bậc đọc thẳng ở trục trái, nhãn "tiền · %" bên phải mỗi thanh
+  // → hết cảnh 10 nhãn 2 dòng chen trên ~290px + nhãn trục xoay 38° bị cắt đáy (SPEC §6.5 · TC-RT-02)
+  const narrow=((el("rtWater")&&el("rtWater").clientWidth)||900)<640;
   const cats=[], base=[], val=[], col=[], tot=[]; let run=m.G;
   const push=(c,b,v,k,isT)=>{ cats.push(c); base.push(b); val.push(v); col.push(k); tot.push(!!isT); };
   push("Income gộp",0,m.G,T.ink,1);
@@ -541,16 +560,21 @@ function drawRtWater(){ const m=rtMoney(vRange(F("rtWater"))), G0=m.G||1;
   push("= Thực nhận",0,run,"#2a78d6",1);
   run-=m.CG; push("− Giá vốn",Math.max(0,run),m.CG,"#8a8296");
   push("= Lãi",0,run,run>=0?T.good:T.crit,1);
+  const catAx={type:"category",data:cats,axisLine:{lineStyle:{color:T.axis}},axisTick:{show:false},
+    axisLabel:Object.assign(axc(),narrow?{interval:0,fontSize:10,color:T.ink2}:{interval:0,fontSize:11,width:Math.max(60,(el("rtWater").clientWidth-90)/cats.length-6),overflow:"break",lineHeight:13})};
+  const valAx={type:"value",splitNumber:narrow?3:5,axisLabel:{color:T.muted,formatter:narrow?fAx:fV,fontSize:MOB()?10:11,hideOverlap:true},splitLine:sl()};
   gc("rtWater").setOption({
     tooltip:tip({trigger:"axis",axisPointer:{type:"shadow"},formatter:p=>{const q=p[p.length-1];
       return `<b>${q.name}</b><br>${fF(q.value)} đ · <b>${fP(rP(q.value,G0))}</b> income gộp`+(RT_PEND&&m.p.g&&q.dataIndex===0?`<br>gồm chờ QT ~${fV(m.p.g)}`:"");}}),
-    grid:{left:46,right:14,top:28,bottom:MOB()?62:30,containLabel:true},
-    xAxis:{type:"category",data:cats,axisLabel:Object.assign(axc(),{interval:0,rotate:MOB()?38:0,fontSize:MOB()?9:11}),axisLine:{lineStyle:{color:T.axis}}},
-    yAxis:{type:"value",axisLabel:{color:T.muted,formatter:fV,fontSize:MOB()?10:11},splitLine:sl()},
+    grid:narrow?{left:6,right:58,top:10,bottom:24,containLabel:true}:{left:46,right:14,top:30,bottom:30,containLabel:true},
+    xAxis:narrow?valAx:catAx,
+    yAxis:narrow?Object.assign(catAx,{inverse:true}):valAx,
+    labelLayout:{hideOverlap:true},
     series:[{type:"bar",stack:"w",data:base,itemStyle:{color:"transparent"},emphasis:{disabled:true},tooltip:{show:false}},
-      {type:"bar",stack:"w",data:val.map((v,i)=>({value:v,itemStyle:{color:col[i],borderRadius:[4,4,0,0],opacity:tot[i]?1:.92}})),
-       label:{show:true,position:"top",fontSize:MOB()?8:11,color:T.ink2,lineHeight:MOB()?11:14,
-         formatter:p=>fV(p.value)+(MOB()?"\n":" · ")+fP(rP(p.value,G0))}}]
+      {type:"bar",stack:"w",barMaxWidth:narrow?22:undefined,
+       data:val.map((v,i)=>({value:v,itemStyle:{color:col[i],borderRadius:narrow?[0,4,4,0]:[4,4,0,0],opacity:tot[i]?1:.92}})),
+       label:{show:true,position:narrow?"right":"top",fontSize:narrow?9:11,color:T.ink2,lineHeight:narrow?11:14,
+         formatter:p=>fV(p.value)+(narrow?"\n":" · ")+fP(rP(p.value,G0))}}]
   },true);
 }
 function drawRtLag(){ const host=el("rtLag"); if(!host||!RET) return;
@@ -587,14 +611,18 @@ function drawRtCost(){ const m=rtMoney(vRange(F("rtCost"))), G0=m.G, N0=m.N, L0=
 function drawRtTrend(){ const ix=rtRows(vRange(F("rtTrend"))), by={};
   ix.forEach(i=>{ const d=RET.dates[RET.d[i]], o=by[d]||(by[d]={N:0,n:[0,0,0,0,0]}); o.N++; o.n[RET.t[i]]++; });
   const ds=Object.keys(by).sort(), rate=ds.map(d=>{const o=by[d];return +((o.n[2]+o.n[3]+o.n[4])/o.N*100).toFixed(1);});
+  const lg=lgTop("rtTrend",[2,3,4].map(k=>RET.types[k]).concat(["% đơn lỗi"]),{name:true});
+  // đọc không cần hover: nhãn % lỗi trên đường, giãn theo bề rộng (~30px/nhãn) + ẩn chồng
+  const pxD=Math.max(1,((el("rtTrend").clientWidth||600)-90)/Math.max(1,ds.length)), stp=Math.max(1,Math.ceil(30/pxD));
   gc("rtTrend").setOption({
-    tooltip:tip({trigger:"axis",axisPointer:{type:"shadow"}}), legend:{top:0,textStyle:{color:T.ink2}},
-    grid:{left:40,right:40,top:34,bottom:28,containLabel:true},
+    tooltip:tip({trigger:"axis",axisPointer:{type:"shadow"}}), legend:lg.legend, labelLayout:{hideOverlap:true},
+    grid:{left:MOB()?6:40,right:MOB()?6:40,top:lg.top,bottom:28,containLabel:true},
     xAxis:{type:"category",data:ds,axisLabel:axc(),axisLine:{lineStyle:{color:T.axis}}},
     yAxis:[{type:"value",name:"Số đơn",nameTextStyle:{color:T.muted},axisLabel:axc(),splitLine:sl()},
       {type:"value",name:"% lỗi",nameTextStyle:{color:T.muted},axisLabel:{color:T.muted,formatter:"{value}%",fontSize:MOB()?10:11},splitLine:{show:false}}],
     series:[...[2,3,4].map(k=>({name:RET.types[k],type:"bar",stack:"x",color:RT_COL[k],data:ds.map(d=>by[d].n[k])})),
-      {name:"% đơn lỗi",type:"line",yAxisIndex:1,smooth:true,symbol:"none",lineStyle:{width:2,color:T.ink},itemStyle:{color:T.ink},data:rate}]
+      {name:"% đơn lỗi",type:"line",yAxisIndex:1,smooth:true,symbol:"circle",symbolSize:2,lineStyle:{width:2,color:T.ink},itemStyle:{color:T.ink},data:rate,z:5,
+       label:{show:true,position:"top",fontSize:9,fontWeight:600,color:T.ink,formatter:p=>p.dataIndex%stp===0?Math.round(p.value)+"%":""}}]
   },true);
 }
 function drawRtReason(){ const ix=rtRows(vRange(F("rtReason"))).filter(i=>RET.t[i]===2||RET.t[i]===3), g={};
@@ -602,12 +630,13 @@ function drawRtReason(){ const ix=rtRows(vRange(F("rtReason"))).filter(i=>RET.t[
     const o=g[rs]||(g[rs]={n:0,by:{}}); o.n++; o.by[b]=(o.by[b]||0)+1; });
   const top=Object.keys(g).sort((x,y)=>g[y].n-g[x].n).slice(0,10).reverse(), tot=ix.length;
   const whos=[...new Set(top.flatMap(r=>Object.keys(g[r].by)))], C={"Khách":T.orange,"Hệ thống":"#cf3b3b","Shop / vận hành":"#2a78d6"};
-  const W=MOB()?22:34;
+  const W=MOB()?16:34;   // điện thoại cắt lý do 16 ký tự → vùng thanh ngang không bị bóp (SPEC TC-RT-04)
+  const lg=lgTop("rtReason",whos);
   gc("rtReason").setOption({
     tooltip:tip({trigger:"axis",axisPointer:{type:"shadow"},formatter:ps=>{const n=ps.reduce((s,p)=>s+p.value,0);
       return `<b>${ps[0].name}</b> · ${fF(n)} đơn · ${fP(rP(n,tot))}<br>`+ps.filter(p=>p.value).map(p=>`${p.marker}${p.seriesName}: ${fF(p.value)}`).join("<br>");}}),
-    legend:{top:0,textStyle:{color:T.ink2}}, grid:{left:8,right:44,top:30,bottom:20,containLabel:true},
-    xAxis:{type:"value",axisLabel:axc(),splitLine:sl()},
+    legend:lg.legend, grid:{left:8,right:46,top:lg.top,bottom:20,containLabel:true},
+    xAxis:{type:"value",axisLabel:Object.assign(axc(),{hideOverlap:true}),splitLine:sl()},
     yAxis:{type:"category",data:top.map(r=>r.length>W?r.slice(0,W)+"…":r),axisLabel:{color:T.ink2,fontSize:MOB()?10:11},axisLine:{lineStyle:{color:T.axis}}},
     series:whos.map((w,ix2)=>({name:w,type:"bar",stack:"r",color:C[w]||T.muted,data:top.map(r=>g[r].by[w]||0),
       label:ix2===whos.length-1?{show:true,position:"right",color:T.ink2,fontSize:10,formatter:p=>fP(rP(g[top[p.dataIndex]].n,tot))}:{show:false}}))
@@ -616,12 +645,13 @@ function drawRtReason(){ const ix=rtRows(vRange(F("rtReason"))).filter(i=>RET.t[
 function drawRtPay(){ const ix=rtRows(vRange(F("rtPay"))), g={0:{N:0,n:[0,0,0,0,0]},1:{N:0,n:[0,0,0,0,0]}};
   ix.forEach(i=>{ const o=g[RET.pm[i]]; o.N++; o.n[RET.t[i]]++; });
   const nm=["COD (trả khi nhận)","Trả trước (ví/thẻ)"], col=[T.orange,"#2a78d6"];
+  const lg=lgTop("rtPay",[0,1].map(p=>nm[p]+" · "+fF(g[p].N)+" đơn"),{lbl:true});   // legend dài rớt 2 dòng → chừa chỗ
   gc("rtPay").setOption({
     tooltip:tip({trigger:"axis",axisPointer:{type:"shadow"},formatter:ps=>ps.map(p=>{const o=g[p.seriesIndex],k=[2,3,4][p.dataIndex];
       return `${p.marker}${nm[p.seriesIndex]}: <b>${p.value}%</b> (${fF(o.n[k])}/${fF(o.N)} đơn)`;}).join("<br>")}),
-    legend:{top:0,textStyle:{color:T.ink2}}, grid:{left:40,right:16,top:34,bottom:24,containLabel:true},
-    xAxis:{type:"category",data:[2,3,4].map(k=>RET.types[k]),axisLabel:axc(),axisLine:{lineStyle:{color:T.axis}}},
-    yAxis:{type:"value",axisLabel:{color:T.muted,formatter:"{value}%",fontSize:MOB()?10:11},splitLine:sl()},
+    legend:lg.legend, grid:{left:MOB()?6:40,right:16,top:lg.top,bottom:24,containLabel:true}, labelLayout:{hideOverlap:true},
+    xAxis:{type:"category",data:[2,3,4].map(k=>RET.types[k]),axisLabel:catLbl("rtPay",3),axisLine:{lineStyle:{color:T.axis}}},
+    yAxis:{type:"value",boundaryGap:[0,"10%"],axisLabel:{color:T.muted,formatter:"{value}%",fontSize:MOB()?10:11},splitLine:sl()},
     series:[0,1].map(p=>({name:nm[p]+" · "+fF(g[p].N)+" đơn",type:"bar",color:col[p],itemStyle:{borderRadius:[4,4,0,0]},
       data:[2,3,4].map(k=>+rP(g[p].n[k],g[p].N).toFixed(1)),label:{show:true,position:"top",fontSize:10,color:T.ink2,formatter:q=>q.value+"%"}}))
   },true);
@@ -688,7 +718,7 @@ let active="ov";
 function renderActive(){
   if(active==="vid"){ renderVideo(); }
   else if(active==="rt"){ renderReturns(); }
-  else { rOverview(); OVC.forEach(id=>RENDER[id]()); }
+  else if(!NO_DATA){ rOverview(); OVC.forEach(id=>RENDER[id]()); }
   ALLC.forEach(syncMini);
   setTimeout(()=>Object.values(charts).forEach(c=>c.resize()),30);
 }
@@ -758,7 +788,8 @@ function mountControls(){
     g.parentNode.insertBefore(bar,g); });
   // popup Rule (1 cái dùng chung)
   if(!el("qModal")){ const m=document.createElement("div"); m.id="qModal"; m.className="qmodal";
-    m.innerHTML='<div class="qmbox" role="dialog" aria-modal="true"><button class="qmx" aria-label="Đóng">✕</button><h3 id="qmT"></h3><div id="qmB"></div></div>';
+    // đầu popup (tiêu đề + ✕) ĐỨNG YÊN, chỉ thân cuộn → nút đóng luôn thấy dù nội dung dài (SPEC AC-06)
+    m.innerHTML='<div class="qmbox" role="dialog" aria-modal="true"><div class="qmhd"><h3 id="qmT"></h3><button class="qmx" aria-label="Đóng">✕</button></div><div id="qmB" class="qmbd"></div></div>';
     document.body.appendChild(m);
     m.addEventListener("click",e=>{ if(e.target===m||e.target.closest(".qmx")) m.classList.remove("on"); });
     document.addEventListener("keydown",e=>{ if(e.key==="Escape") m.classList.remove("on"); }); }
@@ -813,7 +844,8 @@ const RULES={
     '<li><b>Net ROI</b> = DT ÷ Tổng chi phí (1x = hoà vốn).</li><li><b>ROAS</b> = DT ÷ Ads (Ads = phí quảng cáo trừ trên đơn).</li>'+
     '<li><b>Gross ROI</b> = DT ÷ COGS.</li></ul>'+R_FLT],
   chCost:["Cơ cấu chi phí theo kênh", R_SRC+'<ul><li>Mỗi cột = 1 kênh; mỗi đoạn = <b>chi phí nhóm ÷ doanh thu kênh × 100%</b>.</li>'+
-    '<li>Vẽ 4 nhóm COGS · Platform · Ads · KOC (không vẽ Phí sàn phụ trội) · số chỉ in khi ≥ 7%.</li></ul>'+R_COST+
+    '<li>Vẽ đủ 5 nhóm COGS · Platform · Ads · KOC · Phí sàn phụ trội (cộng lại = tổng chi phí ÷ DT kênh) · số chỉ in khi ≥ 7%.</li></ul>'+R_COST+
+    '<p class="qsrc">2026-11-25: sửa lỗi nhóm "Phí sàn phụ trội" có trên chú giải nhưng dữ liệu rỗng (NaN) — nay vẽ đúng số.</p>'+
     '<p class="qsrc">2026-11-25: đã sửa lỗi tráo nhãn Ads ↔ KOC ở chart này.</p>'+R_FLT],
   vkpi:["Chỉ số video (KPI)", '<p class="qsrc">Nguồn: file TikTok <code>Video_Analysis_Video_List.xlsx</code> → <code>video_data.js</code>.</p>'+
     '<ul><li>Lọc theo <b>NGÀY ĐĂNG video</b> nằm trong bộ lọc tổng ("Tất cả" = mọi video).</li>'+
@@ -896,12 +928,18 @@ const RULES={
   ".qmtd.on{background:var(--ink,#1a1611);color:#fdfaf2;border-color:var(--ink,#1a1611)}"+
   ".qmodal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(30,22,10,.45);align-items:center;justify-content:center;padding:16px}"+
   ".qmodal.on{display:flex}"+
-  ".qmbox{background:var(--surface,#fffdf8);border:1px solid var(--line,#e7dec9);border-radius:16px;max-width:600px;width:100%;max-height:86vh;overflow:auto;padding:18px 20px;box-shadow:0 20px 60px rgba(30,22,10,.35);position:relative;font-size:13.5px;line-height:1.55;color:var(--ink,#1a1611)}"+
-  ".qmbox h3{margin:0 0 8px;font-size:17px;padding-right:30px}.qmbox ul{padding-left:18px;margin:6px 0}.qmbox li{margin:3px 0}"+
+  ".qmbox{background:var(--surface,#fffdf8);border:1px solid var(--line,#e7dec9);border-radius:16px;max-width:600px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(30,22,10,.35);position:relative;font-size:13.5px;line-height:1.55;color:var(--ink,#1a1611)}"+
+  ".qmhd{display:flex;align-items:flex-start;gap:10px;padding:16px 14px 8px 20px;border-bottom:1px solid var(--line,#e7dec9);flex:0 0 auto}"+
+  ".qmbd{overflow:auto;padding:8px 20px 18px;flex:1 1 auto;min-height:0;overflow-wrap:anywhere}"+
+  ".qmbox h3{margin:0;font-size:17px;flex:1;min-width:0}.qmbox ul{padding-left:18px;margin:6px 0}.qmbox li{margin:3px 0}"+
   ".qmbox code{font-size:12px;background:#f3ecdd;padding:1px 5px;border-radius:5px;word-break:break-all}"+
   ".qsrc{color:var(--ink2,#5f584a);font-size:12.5px;background:#f8f2e6;border-radius:10px;padding:7px 10px;margin:8px 0}"+
-  ".qmx{position:absolute;top:10px;right:12px;border:none;background:none;font-size:18px;cursor:pointer;color:var(--ink2,#5f584a)}"+
-  "@media(max-width:760px){.qmo select{max-width:none;width:auto}.qmbox{padding:16px 14px;font-size:13px}.qkbar{font-size:11.5px}}";
+  ".qmx{flex:0 0 auto;width:32px;height:32px;border:1px solid var(--line,#e7dec9);border-radius:50%;background:var(--surface2,#f8f2e6);font-size:16px;line-height:1;cursor:pointer;color:var(--ink,#1a1611)}"+
+  ".qmx:hover{background:#ece2cd}"+
+  "@media(max-width:760px){.qmo select{max-width:none;width:auto}.qmbox{font-size:13px}.qmhd{padding:14px 12px 8px 14px}.qmbd{padding:8px 14px 16px}.qkbar{font-size:11.5px}"+
+    /* bảng ma trận KOC×ngày: 2 cột sticky gọn lại → vùng số ở giữa còn ≥ 4 cột trên 360px (SPEC AC-05 · TC-VID-02) */
+    "table.vmx .kcol{min-width:84px;max-width:96px}table.vmx th,table.vmx td{min-width:26px;padding:3px 4px}"+
+    ".chartctrl{gap:6px}.qibtn,.qlbtn{padding:4px 9px}}";
   document.head.appendChild(s); })();
 function switchTab(t){
   if(!document.getElementById("p-"+t)) t="ov";   // tab không còn (vd 'tl') -> về Tổng quan
@@ -948,12 +986,29 @@ el("noteSave").onclick=()=>{ localStorage.setItem(NOTE_KEY, el("noteText").value
   el("noteEditWrap").style.display="none"; el("noteBody").style.display="block"; renderNote(_noteA||compute(G)); };
 el("noteReset").onclick=()=>{ localStorage.removeItem(NOTE_KEY); el("noteText").value="";
   el("noteEditWrap").style.display="none"; el("noteBody").style.display="block"; renderNote(_noteA||compute(G)); };
+function mountNoData(){   // thiếu data.js → tab Tổng quan hiện 1 thẻ báo rỗng gọn (giống #vEmpty), không vỡ trang
+  if(!NO_DATA || el("ovEmpty")) return; const p=el("p-ov"); if(!p) return;
+  [...p.children].forEach(c=>{ c.style.display="none"; });
+  const d=document.createElement("div"); d.id="ovEmpty"; d.className="card";
+  d.style.cssText="text-align:center;color:#938a78;padding:40px";
+  d.innerHTML='Chưa có dữ liệu đơn hàng (<code>data.js</code>) — chạy <code>python python/run_all.py</code> để tạo.';
+  p.prepend(d); }
 mountReturns();    // tab "Hoàn & Hủy" (chỉ khi có returns_data.js — hiện: qami)
 mountControls();   // gắn ⓘ Rule + ⚙ lọc riêng (preset · thanh kéo · kênh · trạng thái · so kỳ trước) vào từng chart
+mountNoData();     // SAU mountControls: ẩn luôn thanh ⓘ KPI vừa gắn
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
-let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{
-  Object.values(charts).forEach(c=>c.resize());},150);});
+// Đổi BỀ RỘNG (kéo cửa sổ laptop ↔ mobile, xoay màn hình) → co khung + VẼ LẠI option phụ thuộc MOB()/bề rộng
+// (bán kính donut, số bong bóng/thanh, số dòng legend, hướng waterfall, bước nhãn) — trước chỉ resize() nên giữ layout cũ (SPEC §6.9 · AC-07).
+// Chỉ đổi CHIỀU CAO (thanh địa chỉ mobile ẩn/hiện khi cuộn) → bỏ qua, khỏi vẽ lại liên tục.
+let rz, rzW=window.innerWidth;
+window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{
+  Object.values(charts).forEach(c=>c.resize());
+  if(window.innerWidth===rzW) return; rzW=window.innerWidth;
+  if(el("view-home").classList.contains("on")){ renderHome(); return; }
+  const ids=active==="ov"?(NO_DATA?[]:OVC):active==="rt"?RTC:[];
+  ids.forEach(id=>{ if(charts[id]) RENDER[id](); });   // chỉ chart ECharts (bảng HTML tự co, giữ vị trí cuộn)
+},150);});
 function routeHash(){ const h=(location.hash||"").replace("#","").split(":");
   if(h[0]==="clients"){ switchView("clients");
     if(h.includes("cmp")){ G.cmp=true; ALLC.forEach(id=>{ L[id]=cloneF(G); }); syncGlobal(); }
