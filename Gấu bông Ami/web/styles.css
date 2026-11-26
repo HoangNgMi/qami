@@ -129,4 +129,6 @@ footer .o{color:var(--orange)}
   .filters{width:100%;margin-left:0}.filters .f{flex:1}select{width:100%}
   .filters .range{flex:1 1 100%}
   .kpi .v{font-size:20px}
+  /* thẻ gọn hơn trên điện thoại → thêm ~8px bề ngang cho chart/bảng (SPEC rà soát UI 2026-11-25) */
+  .card{padding:14px 12px}.kpi{padding:12px 13px}
 }
